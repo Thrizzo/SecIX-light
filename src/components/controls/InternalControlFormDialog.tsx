@@ -318,6 +318,8 @@ export function InternalControlFormDialog({ open, onOpenChange, controlId }: Int
                       </FormItem>
                     )}
                   />
+
+                  <FormField
                     control={form.control}
                     name="title"
                     rules={{ required: 'Title is required' }}
