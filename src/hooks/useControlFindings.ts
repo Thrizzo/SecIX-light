@@ -7,6 +7,80 @@ export type FindingStatus = 'Open' | 'In Progress' | 'Closed' | 'Accepted';
 export type PoamStatus = 'draft' | 'active' | 'completed' | 'cancelled';
 export type MilestoneStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
 
+// Helper to derive compliance status from findings
+// Priority: Major Deviation > Minor Deviation > Opportunity for Improvement
+// Only open/in-progress findings affect compliance status
+function deriveComplianceStatus(findings: Array<{ finding_type: FindingType; status: FindingStatus }>): string {
+  const activeFindings = findings.filter(f => f.status !== 'Closed');
+  
+  if (activeFindings.some(f => f.finding_type === 'Major Deviation')) {
+    return 'major_deviation';
+  }
+  if (activeFindings.some(f => f.finding_type === 'Minor Deviation')) {
+    return 'minor_deviation';
+  }
+  // Opportunities for improvement still allow compliant status
+  return 'compliant';
+}
+
+// Update internal control compliance status based on its findings
+async function updateInternalControlComplianceStatus(controlId: string): Promise<boolean> {
+  const { data: findings, error: fetchError } = await supabase
+    .from('control_findings')
+    .select('finding_type, status')
+    .eq('internal_control_id', controlId);
+
+  if (fetchError) {
+    console.error('Failed to fetch findings for compliance update:', fetchError);
+    return false;
+  }
+
+  const typedFindings = (findings || []) as Array<{ finding_type: FindingType; status: FindingStatus }>;
+  const newStatus = deriveComplianceStatus(typedFindings);
+  
+  console.log('Updating internal control compliance:', { controlId, findingsCount: typedFindings.length, newStatus });
+  
+  const { error: updateError } = await supabase
+    .from('internal_controls')
+    .update({ compliance_status: newStatus })
+    .eq('id', controlId);
+
+  if (updateError) {
+    console.error('Failed to update internal control compliance status:', updateError);
+    return false;
+  }
+  return true;
+}
+
+// Update framework control compliance status based on its findings
+async function updateFrameworkControlComplianceStatus(controlId: string): Promise<boolean> {
+  const { data: findings, error: fetchError } = await supabase
+    .from('control_findings')
+    .select('finding_type, status')
+    .eq('framework_control_id', controlId);
+
+  if (fetchError) {
+    console.error('Failed to fetch findings for compliance update:', fetchError);
+    return false;
+  }
+
+  const typedFindings = (findings || []) as Array<{ finding_type: FindingType; status: FindingStatus }>;
+  const newStatus = deriveComplianceStatus(typedFindings);
+  
+  console.log('Updating framework control compliance:', { controlId, findingsCount: typedFindings.length, newStatus });
+  
+  const { error: updateError } = await supabase
+    .from('framework_controls')
+    .update({ compliance_status: newStatus })
+    .eq('id', controlId);
+
+  if (updateError) {
+    console.error('Failed to update framework control compliance status:', updateError);
+    return false;
+  }
+  return true;
+}
+
 export interface ControlFinding {
   id: string;
   internal_control_id?: string | null;
@@ -203,10 +277,22 @@ export function useCreateFinding() {
         .single();
 
       if (error) throw error;
+      
+      // Update compliance status immediately after insert (before returning)
+      if (input.internal_control_id) {
+        await updateInternalControlComplianceStatus(input.internal_control_id);
+      }
+      if (input.framework_control_id) {
+        await updateFrameworkControlComplianceStatus(input.framework_control_id);
+      }
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['control-findings'] });
+      queryClient.invalidateQueries({ queryKey: ['internal-controls'] });
+      queryClient.invalidateQueries({ queryKey: ['framework-controls'] });
+      
       toast({ title: 'Finding created successfully' });
     },
     onError: (error) => {
@@ -229,14 +315,28 @@ export function useUpdateFinding() {
         .from('control_findings')
         .update(cleanUpdates)
         .eq('id', id)
-        .select()
+        .select('*, internal_control_id, framework_control_id')
         .single();
 
       if (error) throw error;
-      return data;
+      
+      const result = data as { internal_control_id?: string | null; framework_control_id?: string | null };
+      
+      // Update compliance status immediately after update (before returning)
+      if (result.internal_control_id) {
+        await updateInternalControlComplianceStatus(result.internal_control_id);
+      }
+      if (result.framework_control_id) {
+        await updateFrameworkControlComplianceStatus(result.framework_control_id);
+      }
+      
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['control-findings'] });
+      queryClient.invalidateQueries({ queryKey: ['internal-controls'] });
+      queryClient.invalidateQueries({ queryKey: ['framework-controls'] });
+      
       toast({ title: 'Finding updated successfully' });
     },
     onError: (error) => {
@@ -251,16 +351,29 @@ export function useDeleteFinding() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, internalControlId, frameworkControlId }: { id: string; internalControlId?: string | null; frameworkControlId?: string | null }) => {
       const { error } = await supabase
         .from('control_findings')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
+      
+      // Update compliance status immediately after delete (before returning)
+      if (internalControlId) {
+        await updateInternalControlComplianceStatus(internalControlId);
+      }
+      if (frameworkControlId) {
+        await updateFrameworkControlComplianceStatus(frameworkControlId);
+      }
+      
+      return { internalControlId, frameworkControlId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['control-findings'] });
+      queryClient.invalidateQueries({ queryKey: ['internal-controls'] });
+      queryClient.invalidateQueries({ queryKey: ['framework-controls'] });
+      
       toast({ title: 'Finding deleted' });
     },
     onError: (error) => {

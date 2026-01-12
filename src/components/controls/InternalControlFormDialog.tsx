@@ -24,6 +24,7 @@ import {
   AUTOMATION_LEVELS,
   CONTROL_FREQUENCIES,
   CONTROL_STATUSES,
+  COMPLIANCE_STATUSES,
   CreateInternalControlInput,
 } from '@/hooks/useInternalControls';
 import { SECURITY_FUNCTIONS } from '@/hooks/useControlFrameworks';
@@ -141,6 +142,7 @@ export function InternalControlFormDialog({ open, onOpenChange, controlId }: Int
       system_scope: '',
       effective_date: undefined,
       review_date: undefined,
+      compliance_status: 'not_assessed',
     },
   });
 
@@ -162,6 +164,7 @@ export function InternalControlFormDialog({ open, onOpenChange, controlId }: Int
         system_scope: existingControl.system_scope || '',
         effective_date: existingControl.effective_date || undefined,
         review_date: existingControl.review_date || undefined,
+        compliance_status: existingControl.compliance_status || 'not_assessed',
       });
       
       setSubcontrols(parsedSubs);
@@ -180,6 +183,7 @@ export function InternalControlFormDialog({ open, onOpenChange, controlId }: Int
         system_scope: '',
         effective_date: undefined,
         review_date: undefined,
+        compliance_status: 'not_assessed',
       });
       setSubcontrols([]);
     }
@@ -288,6 +292,32 @@ export function InternalControlFormDialog({ open, onOpenChange, controlId }: Int
                   </div>
 
                   <FormField
+                    control={form.control}
+                    name="compliance_status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Compliance Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || 'not_assessed'}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select compliance status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {COMPLIANCE_STATUSES.map(cs => (
+                              <SelectItem key={cs.value} value={cs.value}>
+                                <div className="flex flex-col">
+                                  <span>{cs.label}</span>
+                                  <span className="text-xs text-muted-foreground">{cs.description}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                     control={form.control}
                     name="title"
                     rules={{ required: 'Title is required' }}

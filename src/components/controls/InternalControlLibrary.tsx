@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Link2, Eye } from 'lucide-react';
-import { useInternalControls, CONTROL_STATUSES, CONTROL_TYPES } from '@/hooks/useInternalControls';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Link2, Eye, CheckCircle2, AlertTriangle, XCircle, HelpCircle } from 'lucide-react';
+import { useInternalControls, CONTROL_STATUSES, CONTROL_TYPES, COMPLIANCE_STATUSES, ControlComplianceStatus } from '@/hooks/useInternalControls';
 import { useControlFrameworks, SECURITY_FUNCTIONS } from '@/hooks/useControlFrameworks';
 import { useBusinessUnits } from '@/hooks/useBusinessUnits';
 import { InternalControlFormDialog } from './InternalControlFormDialog';
@@ -19,6 +20,7 @@ export function InternalControlLibrary() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [functionFilter, setFunctionFilter] = useState<string>('all');
   const [buFilter, setBuFilter] = useState<string>('all');
+  const [complianceFilter, setComplianceFilter] = useState<string>('all');
   const [formOpen, setFormOpen] = useState(false);
   const [editingControl, setEditingControl] = useState<string | null>(null);
   const [viewingControl, setViewingControl] = useState<string | null>(null);
@@ -36,9 +38,48 @@ export function InternalControlLibrary() {
     const matchesType = typeFilter === 'all' || control.control_type === typeFilter;
     const matchesFunction = functionFilter === 'all' || control.security_function === functionFilter;
     const matchesBu = buFilter === 'all' || control.business_unit_id === buFilter;
+    const matchesCompliance = complianceFilter === 'all' || control.compliance_status === complianceFilter;
 
-    return matchesSearch && matchesStatus && matchesType && matchesFunction && matchesBu;
+    return matchesSearch && matchesStatus && matchesType && matchesFunction && matchesBu && matchesCompliance;
   });
+
+  const getComplianceIcon = (status: ControlComplianceStatus | null | undefined) => {
+    switch (status) {
+      case 'compliant':
+        return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
+      case 'minor_deviation':
+        return <AlertTriangle className="h-4 w-4 text-amber-500" />;
+      case 'major_deviation':
+        return <XCircle className="h-4 w-4 text-destructive" />;
+      default:
+        return <HelpCircle className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
+  const getComplianceBadge = (status: ControlComplianceStatus | null | undefined) => {
+    const statusInfo = COMPLIANCE_STATUSES.find(s => s.value === status) || COMPLIANCE_STATUSES[3];
+    const variants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+      compliant: 'default',
+      minor_deviation: 'outline',
+      major_deviation: 'destructive',
+      not_assessed: 'secondary',
+    };
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant={variants[status || 'not_assessed']} className="gap-1">
+              {getComplianceIcon(status)}
+              <span className="hidden sm:inline">{statusInfo.label}</span>
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{statusInfo.description}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -142,6 +183,18 @@ export function InternalControlLibrary() {
                 ))}
               </SelectContent>
             </Select>
+
+            <Select value={complianceFilter} onValueChange={setComplianceFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Compliance" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Compliance</SelectItem>
+                {COMPLIANCE_STATUSES.map(cs => (
+                  <SelectItem key={cs.value} value={cs.value}>{cs.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -159,6 +212,7 @@ export function InternalControlLibrary() {
               <TableRow>
                 <TableHead>Code</TableHead>
                 <TableHead>Title</TableHead>
+                <TableHead>Compliance</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>CSF Function</TableHead>
                 <TableHead>Status</TableHead>
@@ -169,13 +223,13 @@ export function InternalControlLibrary() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Loading controls...
                   </TableCell>
                 </TableRow>
               ) : filteredControls.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     No controls found. Add your first control to get started.
                   </TableCell>
                 </TableRow>
@@ -194,6 +248,9 @@ export function InternalControlLibrary() {
                           </p>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {getComplianceBadge(control.compliance_status)}
                     </TableCell>
                     <TableCell>
                       {control.control_type && (

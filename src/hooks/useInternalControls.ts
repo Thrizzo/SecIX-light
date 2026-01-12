@@ -2,6 +2,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/database/client';
 import { useToast } from '@/hooks/use-toast';
 
+export type ControlComplianceStatus = 'compliant' | 'minor_deviation' | 'major_deviation' | 'not_assessed';
+
+export const COMPLIANCE_STATUSES: Array<{ value: ControlComplianceStatus; label: string; description: string }> = [
+  { value: 'compliant', label: 'Compliant', description: 'Control is fully compliant with no findings' },
+  { value: 'minor_deviation', label: 'Minor Deviation', description: 'Control has minor deviations but is acceptable for risk mitigation' },
+  { value: 'major_deviation', label: 'Major Deviation', description: 'Control has major deviations and cannot be used for risk mitigation' },
+  { value: 'not_assessed', label: 'Not Assessed', description: 'Control compliance has not been assessed' },
+];
+
+// Helper: Check if a control is in a usable compliance state for risk mitigation
+export function isControlUsableForRisk(status: ControlComplianceStatus | null | undefined): boolean {
+  return status === 'compliant' || status === 'minor_deviation';
+}
+
 export interface InternalControl {
   id: string;
   internal_control_code: string;
@@ -18,6 +32,8 @@ export interface InternalControl {
   legacy_control_id: string | null;
   effective_date: string | null;
   review_date: string | null;
+  compliance_status: ControlComplianceStatus | null;
+  compliance_notes: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -39,6 +55,8 @@ export interface CreateInternalControlInput {
   source_framework_control_ids?: string[];
   effective_date?: string;
   review_date?: string;
+  compliance_status?: ControlComplianceStatus;
+  compliance_notes?: string;
 }
 
 export const CONTROL_TYPES = [

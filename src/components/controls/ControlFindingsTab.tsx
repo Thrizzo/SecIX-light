@@ -188,7 +188,11 @@ export function ControlFindingsTab({ controlId, controlType, businessUnitId }: C
                         size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteFinding.mutate(finding.id);
+                          deleteFinding.mutate({
+                            id: finding.id,
+                            internalControlId: finding.internal_control_id,
+                            frameworkControlId: finding.framework_control_id,
+                          });
                         }}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
