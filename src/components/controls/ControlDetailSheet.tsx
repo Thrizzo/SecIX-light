@@ -40,7 +40,11 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
   
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: control, isLoading } = useInternalControl(controlId || undefined);
+  const {
+    data: control,
+    isLoading,
+    error: controlError,
+  } = useInternalControl(controlId || undefined);
   const { data: frameworkMappings = [] } = useControlFrameworkMappings(controlId || undefined);
   const { data: riskLinks = [] } = useRiskControlLinks(controlId || undefined);
   const { data: evidenceItems = [] } = useControlEvidence(controlId || undefined);
@@ -91,7 +95,7 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
     }
   };
 
-  if (!control && !isLoading) return null;
+  if (!control && !isLoading && !controlError) return null;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -148,6 +152,21 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <p className="text-muted-foreground">Loading control details...</p>
+                </div>
+              ) : controlError ? (
+                <div className="py-12">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Unable to load control</CardTitle>
+                      <CardDescription>
+                        {(controlError as any)?.message || 'An unexpected error occurred.'}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                </div>
+              ) : !control ? (
+                <div className="flex items-center justify-center py-12">
+                  <p className="text-muted-foreground">No control selected.</p>
                 </div>
               ) : (
                 <Tabs defaultValue="overview" className="mt-4">

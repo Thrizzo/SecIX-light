@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertTriangle, Plus, Trash2, Edit2, XCircle, AlertCircle, Lightbulb, Calendar, ClipboardList, ChevronRight } from 'lucide-react';
 import { 
   useInternalControlFindings, 
@@ -217,6 +217,9 @@ export function ControlFindingsTab({ controlId, controlType, businessUnitId }: C
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>{editingFinding ? 'Edit Finding' : 'Add Finding'}</DialogTitle>
+            <DialogDescription>
+              {editingFinding ? 'Update finding details.' : 'Record a new control finding.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">

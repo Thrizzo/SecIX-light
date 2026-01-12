@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import { CalendarIcon, Plus, X, Server, Database, Layers, Shield, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -231,6 +231,11 @@ export function InternalControlFormDialog({ open, onOpenChange, controlId }: Int
           <DialogTitle className="text-xl">
             {isEditing ? 'Edit Internal Control' : 'Add Internal Control'}
           </DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? 'Update the details of this internal control.'
+              : 'Create a new internal control for your control library.'}
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
