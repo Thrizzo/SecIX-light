@@ -128,7 +128,9 @@ Access at: http://localhost
 
 ### Troubleshooting
 
-If you encounter database initialization errors during first startup, the init scripts may have failed mid-execution. Run the following commands to reset and rebuild:
+#### Database Initialization Errors
+
+If you encounter database initialization errors during first startup, the init scripts may have failed mid-execution:
 
 ```bash
 # Stop all containers and remove volumes (clears database)
@@ -140,6 +142,109 @@ docker compose up -d
 ```
 
 > **Note**: The `-v` flag removes volumes including database data. Only use this for fresh installations or when troubleshooting init errors.
+
+#### Docker Network Not Found
+
+If you see an error like:
+```
+Error response from daemon: failed to set up container networking: network ... not found
+```
+
+**Quick Fix:**
+```bash
+# Stop containers
+docker compose --profile ollama down
+
+# Clean up orphaned networks
+docker network prune -f
+
+# Restart
+docker compose --profile ollama up -d
+```
+
+**Full Reset (if quick fix fails):**
+```bash
+# Stop everything
+docker compose --profile ollama down
+
+# Remove the specific network if it exists
+docker network rm secix-light-network 2>/dev/null || true
+
+# Clean up all unused networks
+docker network prune -f
+
+# Force recreate containers
+docker compose --profile ollama up -d --force-recreate
+```
+
+#### Table Does Not Exist
+
+If you see errors like `relation "public.confidentiality_levels" does not exist`, the database schema wasn't fully initialized.
+
+**Option A - Keep existing data:**
+```bash
+docker compose exec -T db psql -U postgres -d postgres < ./docker/init-scripts/002_schema.sql
+```
+
+**Option B - Fresh start (wipes all data):**
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+#### Container Won't Start
+
+If containers fail to start or keep restarting:
+
+```bash
+# Check container logs
+docker compose logs api
+docker compose logs frontend
+docker compose logs db
+
+# Check container status
+docker compose ps
+
+# Force rebuild
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+```
+
+#### Ollama Connection Issues
+
+If AI features aren't working with Ollama:
+
+```bash
+# Verify Ollama is running
+docker compose --profile ollama ps
+
+# Check Ollama logs
+docker compose logs ollama
+
+# Verify model is available
+docker compose exec ollama ollama list
+
+# Pull model if missing
+docker compose exec ollama ollama pull llama3.2
+```
+
+#### Port Already in Use
+
+If you see "port is already allocated":
+
+```bash
+# Find what's using the port (e.g., port 80)
+# Windows
+netstat -ano | findstr :80
+
+# Linux/macOS
+lsof -i :80
+
+# Either stop the conflicting service or change the port in .env
+FRONTEND_PORT=8080
+API_PORT=3002
+```
 
 ### Services
 
