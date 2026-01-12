@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,12 +34,16 @@ interface FrameworkControlDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   controlId?: string | null;
+  initialTab?: 'details' | 'mappings' | 'findings' | 'evidence' | 'guidance';
+  startEditing?: boolean;
 }
 
 export function FrameworkControlDetailSheet({ 
   open, 
   onOpenChange, 
-  controlId 
+  controlId,
+  initialTab = 'details',
+  startEditing = false,
 }: FrameworkControlDetailSheetProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<any>({});
@@ -193,7 +197,7 @@ export function FrameworkControlDetailSheet({
                 <p className="text-muted-foreground">Loading control details...</p>
               </div>
             ) : (
-              <Tabs defaultValue="details" className="mt-4">
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="mt-4">
                 <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="details">Details</TabsTrigger>
                   <TabsTrigger value="mappings">

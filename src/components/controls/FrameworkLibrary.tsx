@@ -27,6 +27,7 @@ export function FrameworkLibrary() {
   const [expandedFramework, setExpandedFramework] = useState<string | null>(null);
   const [selectedControlId, setSelectedControlId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [detailIntent, setDetailIntent] = useState<'view' | 'edit' | 'map'>('view');
   const [showAllControls, setShowAllControls] = useState<Record<string, boolean>>({});
 
   const { data: frameworks = [], isLoading } = useControlFrameworks();
@@ -51,8 +52,9 @@ export function FrameworkLibrary() {
     ctrl.description?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleViewControl = (controlId: string) => {
+  const handleOpenControl = (controlId: string, intent: 'view' | 'edit' | 'map' = 'view') => {
     setSelectedControlId(controlId);
+    setDetailIntent(intent);
     setDetailOpen(true);
   };
 
@@ -268,24 +270,24 @@ export function FrameworkLibrary() {
                                           <MoreHorizontal className="h-4 w-4" />
                                         </Button>
                                       </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end" className="bg-popover">
-                                        <DropdownMenuItem onClick={() => handleViewControl(control.id)}>
-                                          <Eye className="h-4 w-4 mr-2" />
-                                          View Details
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleViewControl(control.id)}>
-                                          <Edit2 className="h-4 w-4 mr-2" />
-                                          Edit Control
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleViewControl(control.id)}>
-                                          <Link2 className="h-4 w-4 mr-2" />
-                                          Map to Internal
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem 
-                                          className="text-destructive"
-                                          onClick={() => deleteControl.mutate(control.id)}
-                                        >
+                                        <DropdownMenuContent align="end" className="bg-popover">
+                                          <DropdownMenuItem onClick={() => handleOpenControl(control.id, 'view')}>
+                                            <Eye className="h-4 w-4 mr-2" />
+                                            View Details
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => handleOpenControl(control.id, 'edit')}>
+                                            <Edit2 className="h-4 w-4 mr-2" />
+                                            Edit Control
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => handleOpenControl(control.id, 'map')}>
+                                            <Link2 className="h-4 w-4 mr-2" />
+                                            Map to Internal
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem 
+                                            className="text-destructive"
+                                            onClick={() => deleteControl.mutate(control.id)}
+                                          >
                                           <Trash2 className="h-4 w-4 mr-2" />
                                           Delete Control
                                         </DropdownMenuItem>
@@ -336,8 +338,16 @@ export function FrameworkLibrary() {
       <FrameworkImportWizard open={importOpen} onOpenChange={setImportOpen} />
       <FrameworkControlDetailSheet 
         open={detailOpen} 
-        onOpenChange={setDetailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) {
+            setSelectedControlId(null);
+            setDetailIntent('view');
+          }
+        }}
         controlId={selectedControlId}
+        initialTab={detailIntent === 'map' ? 'mappings' : 'details'}
+        startEditing={detailIntent === 'edit'}
       />
     </div>
   );
