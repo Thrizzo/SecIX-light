@@ -45,6 +45,9 @@ export function FrameworkControlDetailSheet({
   initialTab = 'details',
   startEditing = false,
 }: FrameworkControlDetailSheetProps) {
+  type FrameworkControlTab = 'details' | 'mappings' | 'findings' | 'evidence' | 'guidance';
+
+  const [activeTab, setActiveTab] = useState<FrameworkControlTab>(initialTab);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<any>({});
   const [mappingInternalId, setMappingInternalId] = useState<string>('');
@@ -63,6 +66,34 @@ export function FrameworkControlDetailSheet({
   const deleteMapping = useDeleteFrameworkMapping();
   const uploadEvidence = useUploadControlEvidence();
   const deleteEvidence = useDeleteControlEvidence();
+
+  useEffect(() => {
+    if (!open) return;
+    setActiveTab(initialTab);
+
+    // Reset transient state when switching between controls / intents.
+    setIsEditing(false);
+    setMappingInternalId('');
+    setEvidenceName('');
+  }, [open, initialTab, controlId]);
+
+  useEffect(() => {
+    if (!open || !startEditing || !control || isEditing) return;
+
+    setEditData({
+      control_code: control.control_code || '',
+      title: control.title || '',
+      description: control.description || '',
+      domain: control.domain || '',
+      subcategory: control.subcategory || '',
+      control_type: control.control_type || '',
+      guidance: control.guidance || '',
+      implementation_guidance: (control as any).implementation_guidance || '',
+      reference_links: (control as any).reference_links || '',
+      security_function: (control as any).security_function || '',
+    });
+    setIsEditing(true);
+  }, [open, startEditing, control, isEditing]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
