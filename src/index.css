@@ -1,0 +1,670 @@
+/* Google Fonts loaded asynchronously via index.html to prevent render blocking */
+
+@import "@xyflow/react/dist/style.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* SecIX GRC Platform - Dark Command Center Theme */
+
+@layer base {
+  :root {
+    /* Primary dark theme - slate command center */
+    --background: 222 47% 8%;
+    --foreground: 210 40% 96%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 96%;
+
+    /* Primary: Cyan - trust & technology */
+    --primary: 187 86% 53%;
+    --primary-foreground: 222 47% 8%;
+
+    /* Secondary: Slate surfaces */
+    --secondary: 222 47% 15%;
+    --secondary-foreground: 210 40% 90%;
+
+    /* Muted: Subtle backgrounds */
+    --muted: 222 47% 13%;
+    --muted-foreground: 215 20% 55%;
+
+    /* Accent: Emerald - success/safe */
+    --accent: 160 84% 39%;
+    --accent-foreground: 222 47% 8%;
+
+    /* Destructive: Red alerts */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Warning: Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 8%;
+
+    /* Info: Blue */
+    --info: 217 91% 60%;
+    --info-foreground: 222 47% 8%;
+
+    /* Risk severity colors */
+    --severity-critical: 0 84% 60%;
+    --severity-high: 25 95% 53%;
+    --severity-medium: 38 92% 50%;
+    --severity-low: 160 84% 39%;
+    --severity-negligible: 215 20% 55%;
+
+    /* Borders & inputs */
+    --border: 222 47% 18%;
+    --input: 222 47% 15%;
+    --ring: 187 86% 53%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 215 20% 65%;
+    --sidebar-primary: 187 86% 53%;
+    --sidebar-primary-foreground: 222 47% 8%;
+    --sidebar-accent: 222 47% 12%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 222 47% 15%;
+    --sidebar-ring: 187 86% 53%;
+
+    /* Custom gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(187 86% 53%) 0%, hsl(160 84% 39%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(222 47% 11%) 0%, hsl(222 47% 6%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(222 47% 12%) 0%, hsl(222 47% 9%) 100%);
+    --gradient-glow: radial-gradient(ellipse at center, hsl(187 86% 53% / 0.15) 0%, transparent 70%);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(222 47% 3% / 0.5);
+    --shadow-md: 0 4px 6px -1px hsl(222 47% 3% / 0.6), 0 2px 4px -2px hsl(222 47% 3% / 0.6);
+    --shadow-lg: 0 10px 15px -3px hsl(222 47% 3% / 0.7), 0 4px 6px -4px hsl(222 47% 3% / 0.7);
+    --shadow-glow: 0 0 20px hsl(187 86% 53% / 0.3);
+    --shadow-glow-lg: 0 0 40px hsl(187 86% 53% / 0.4);
+
+    /* Chart colors */
+    --chart-1: 187 86% 53%;
+    --chart-2: 160 84% 39%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 280 85% 65%;
+    --chart-5: 0 84% 60%;
+  }
+
+  /* Light mode - ultra-soft, warm paper tones */
+  .light {
+    /* Warm paper/parchment backgrounds - very gentle on eyes */
+    --background: 45 30% 96%;
+    --foreground: 220 20% 25%;
+
+    --card: 45 35% 98%;
+    --card-foreground: 220 18% 22%;
+
+    --popover: 45 35% 99%;
+    --popover-foreground: 220 18% 22%;
+
+    /* Primary: Muted sage teal - calm & professional */
+    --primary: 180 40% 35%;
+    --primary-foreground: 45 35% 98%;
+
+    /* Secondary: Soft warm sand */
+    --secondary: 40 25% 90%;
+    --secondary-foreground: 220 15% 30%;
+
+    /* Muted: Very soft warm gray */
+    --muted: 40 20% 93%;
+    --muted-foreground: 220 10% 50%;
+
+    /* Accent: Soft sage green */
+    --accent: 155 40% 40%;
+    --accent-foreground: 45 35% 98%;
+
+    /* Destructive: Soft terracotta */
+    --destructive: 8 50% 55%;
+    --destructive-foreground: 45 35% 98%;
+
+    /* Warning: Soft golden amber */
+    --warning: 40 65% 52%;
+    --warning-foreground: 220 20% 18%;
+
+    /* Info: Soft dusty blue */
+    --info: 210 50% 55%;
+    --info-foreground: 45 35% 98%;
+
+    /* Borders & inputs - very subtle warm tones */
+    --border: 40 20% 86%;
+    --input: 40 25% 94%;
+    --ring: 180 40% 35%;
+
+    /* Sidebar - slightly warmer than background */
+    --sidebar-background: 42 28% 94%;
+    --sidebar-foreground: 220 15% 40%;
+    --sidebar-primary: 180 40% 35%;
+    --sidebar-primary-foreground: 45 35% 98%;
+    --sidebar-accent: 40 22% 89%;
+    --sidebar-accent-foreground: 220 18% 25%;
+    --sidebar-border: 40 20% 86%;
+    --sidebar-ring: 180 40% 35%;
+
+    /* Shadows - ultra-soft and warm */
+    --shadow-sm: 0 1px 2px 0 hsl(40 20% 30% / 0.04);
+    --shadow-md: 0 4px 6px -1px hsl(40 20% 30% / 0.06), 0 2px 4px -2px hsl(40 20% 30% / 0.04);
+    --shadow-lg: 0 10px 15px -3px hsl(40 20% 30% / 0.06), 0 4px 6px -4px hsl(40 20% 30% / 0.04);
+    --shadow-glow: 0 0 20px hsl(180 40% 35% / 0.1);
+    --shadow-glow-lg: 0 0 40px hsl(180 40% 35% / 0.15);
+
+    /* Gradients - soft and warm */
+    --gradient-primary: linear-gradient(135deg, hsl(180 40% 35%) 0%, hsl(155 40% 40%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(45 35% 98%) 0%, hsl(42 28% 94%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(45 35% 98%) 0%, hsl(45 30% 96%) 100%);
+    --gradient-glow: radial-gradient(ellipse at center, hsl(180 40% 35% / 0.05) 0%, transparent 70%);
+
+    /* Risk severity - muted, gentle tones */
+    --severity-critical: 8 55% 52%;
+    --severity-high: 25 70% 55%;
+    --severity-medium: 40 65% 52%;
+    --severity-low: 155 40% 40%;
+    --severity-negligible: 220 10% 58%;
+
+    /* Chart colors - harmonious muted palette */
+    --chart-1: 180 40% 35%;
+    --chart-2: 155 40% 40%;
+    --chart-3: 40 65% 52%;
+    --chart-4: 265 40% 55%;
+    --chart-5: 8 55% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer components {
+  /* Risk score badges */
+  .risk-score {
+    @apply inline-flex items-center justify-center w-8 h-8 rounded text-xs font-bold font-mono;
+  }
+
+  .risk-score-critical {
+    @apply bg-[hsl(var(--severity-critical))] text-foreground;
+  }
+
+  .risk-score-high {
+    @apply bg-[hsl(var(--severity-high))] text-foreground;
+  }
+
+  .risk-score-medium {
+    @apply bg-[hsl(var(--severity-medium))] text-background;
+  }
+
+  .risk-score-low {
+    @apply bg-[hsl(var(--severity-low))] text-background;
+  }
+
+  .risk-score-negligible {
+    @apply bg-[hsl(var(--severity-negligible))] text-foreground;
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .glow-primary-lg {
+    box-shadow: var(--shadow-glow-lg);
+  }
+
+  /* Grid background pattern */
+  .grid-pattern {
+    background-image: 
+      linear-gradient(hsl(var(--border) / 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.3) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Floating grid for landing page */
+  .floating-grid {
+    background-image: 
+      linear-gradient(hsl(var(--primary) / 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary) / 0.08) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: float-grid 20s ease-in-out infinite;
+  }
+
+  .light .floating-grid {
+    background-image: 
+      linear-gradient(hsl(var(--primary) / 0.12) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary) / 0.12) 1px, transparent 1px);
+  }
+
+  /* Animated gradient border */
+  .gradient-border {
+    position: relative;
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: calc(var(--radius) + 1px);
+    background: var(--gradient-primary);
+    z-index: -1;
+    opacity: 0.5;
+  }
+
+  /* Status indicator pulse */
+  .status-pulse {
+    @apply relative;
+  }
+
+  .status-pulse::before {
+    content: '';
+    @apply absolute inset-0 rounded-full animate-ping opacity-75;
+    background: inherit;
+  }
+
+  /* Data table styles */
+  .data-table {
+    @apply w-full text-sm;
+  }
+
+  .data-table th {
+    @apply px-4 py-3 text-left font-medium text-muted-foreground uppercase tracking-wider text-xs bg-muted/50;
+  }
+
+  .data-table td {
+    @apply px-4 py-3 border-b border-border;
+  }
+
+  .data-table tr:hover td {
+    @apply bg-muted/30;
+  }
+}
+
+@layer utilities {
+  /* Text gradient */
+  .text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ReactFlow theming - force dark/light mode colors */
+  .react-flow {
+    --xy-background-color: hsl(var(--background)) !important;
+
+    /* Theming hooks actually used by @xyflow/react */
+    --xy-node-background-color: transparent !important;
+    --xy-node-border: none !important;
+    --xy-node-color: hsl(var(--foreground)) !important;
+    --xy-node-boxshadow-hover: none !important;
+    --xy-node-boxshadow-selected: none !important;
+
+    --xy-edge-stroke: hsl(var(--muted-foreground)) !important;
+    --xy-edge-label-background-color: hsl(var(--background) / 0.95) !important;
+    --xy-edge-label-color: hsl(var(--foreground)) !important;
+
+    --xy-controls-button-background-color: hsl(var(--card)) !important;
+    --xy-controls-button-color: hsl(var(--foreground)) !important;
+    --xy-controls-button-border-color: hsl(var(--border)) !important;
+
+    --xy-minimap-background-color: hsl(var(--card)) !important;
+    --xy-minimap-mask-background-color: hsl(var(--background) / 0.8) !important;
+
+    background-color: hsl(var(--background)) !important;
+  }
+
+  .react-flow__pane {
+    background-color: hsl(var(--background)) !important;
+  }
+
+  /* Ensure all internal ReactFlow layers use themed background */
+  .react-flow__viewport,
+  .react-flow__renderer,
+  .react-flow__container {
+    background-color: hsl(var(--background)) !important;
+  }
+
+  /* Panels (e.g. Legend) default to white in ReactFlow; force theme */
+  .react-flow__panel {
+    background-color: hsl(var(--card)) !important;
+    color: hsl(var(--card-foreground)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+  }
+  /* Remove XYFlow default node chrome (background/padding/border) so our custom nodes render cleanly */
+  .react-flow__node-default,
+  .react-flow__node-input,
+  .react-flow__node-output,
+  .react-flow__node-group {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  /* Also ensure the outer node wrapper itself stays transparent */
+  .react-flow__node {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .react-flow__controls {
+    background-color: hsl(var(--card)) !important;
+    border-color: hsl(var(--border)) !important;
+    border-radius: 0.5rem !important;
+  }
+
+  .react-flow__controls-button {
+    background-color: hsl(var(--card)) !important;
+    border-color: hsl(var(--border)) !important;
+    fill: hsl(var(--foreground)) !important;
+  }
+
+  .react-flow__controls-button:hover {
+    background-color: hsl(var(--muted)) !important;
+  }
+
+  .react-flow__minimap {
+    background-color: hsl(var(--card)) !important;
+    border-color: hsl(var(--border)) !important;
+  }
+
+  .react-flow__minimap-node {
+    fill: hsl(var(--muted)) !important;
+  }
+
+  /* Light mode specific ReactFlow overrides */
+  .light .react-flow {
+    --xy-background-color: hsl(45 30% 96%) !important;
+    background-color: hsl(45 30% 96%) !important;
+  }
+
+  .light .react-flow__pane {
+    background-color: hsl(45 30% 96%) !important;
+  }
+
+  .light .react-flow__controls {
+    background-color: hsl(45 35% 98%) !important;
+    border-color: hsl(40 20% 86%) !important;
+  }
+
+  .light .react-flow__controls-button {
+    background-color: hsl(45 35% 98%) !important;
+    border-color: hsl(40 20% 86%) !important;
+    fill: hsl(220 20% 25%) !important;
+  }
+
+  .light .react-flow__controls-button:hover {
+    background-color: hsl(40 20% 93%) !important;
+  }
+
+  .light .react-flow__minimap {
+    background-color: hsl(45 35% 98%) !important;
+    border-color: hsl(40 20% 86%) !important;
+  }
+
+  .light .react-flow__edge path {
+    stroke: hsl(220 10% 50%) !important;
+  }
+
+  /* Edge color classes for theme-aware edge styling */
+  .edge-default path {
+    stroke: hsl(var(--muted-foreground)) !important;
+  }
+  .edge-primary path {
+    stroke: hsl(var(--primary)) !important;
+  }
+  .edge-warning path {
+    stroke: hsl(var(--warning)) !important;
+  }
+  .edge-chart4 path {
+    stroke: hsl(var(--chart-4)) !important;
+  }
+  .edge-muted path {
+    stroke: hsl(var(--muted-foreground)) !important;
+  }
+  .edge-accent path {
+    stroke: hsl(var(--accent)) !important;
+  }
+
+  /* Edge marker colors */
+  .edge-primary .react-flow__edge-path {
+    marker-end: url(#edge-marker-primary) !important;
+  }
+  .edge-warning .react-flow__edge-path {
+    marker-end: url(#edge-marker-warning) !important;
+  }
+  .edge-chart4 .react-flow__edge-path {
+    marker-end: url(#edge-marker-chart4) !important;
+  }
+  .edge-accent .react-flow__edge-path {
+    marker-end: url(#edge-marker-accent) !important;
+  }
+
+  /* Light mode edge color overrides */
+  .light .edge-default path {
+    stroke: hsl(220 10% 55%) !important;
+  }
+  .light .edge-primary path {
+    stroke: hsl(180 40% 35%) !important;
+  }
+  .light .edge-warning path {
+    stroke: hsl(40 65% 52%) !important;
+  }
+  .light .edge-chart4 path {
+    stroke: hsl(265 40% 55%) !important;
+  }
+  .light .edge-muted path {
+    stroke: hsl(220 10% 55%) !important;
+  }
+  .light .edge-accent path {
+    stroke: hsl(155 40% 40%) !important;
+  }
+
+  /* Glassmorphism */
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+
+  /* Scrollbar styling */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+/* Custom animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes float-grid {
+  0%, 100% { 
+    transform: translate(0, 0) rotate(0deg); 
+  }
+  25% { 
+    transform: translate(10px, -10px) rotate(0.5deg); 
+  }
+  50% { 
+    transform: translate(0, -5px) rotate(0deg); 
+  }
+  75% { 
+    transform: translate(-10px, -10px) rotate(-0.5deg); 
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px hsl(187 86% 53% / 0.3); }
+  50% { box-shadow: 0 0 40px hsl(187 86% 53% / 0.5); }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Hack The Box Style Grid Animations */
+.htb-grid {
+  background-image: 
+    linear-gradient(hsl(var(--primary) / 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--primary) / 0.3) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.htb-grid-secondary {
+  background-image: 
+    linear-gradient(hsl(var(--primary) / 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--primary) / 0.15) 1px, transparent 1px);
+  background-size: 120px 120px;
+}
+
+@keyframes htb-glow-pulse {
+  0%, 100% { 
+    opacity: 0.2;
+    transform: scale(1);
+    box-shadow: 0 0 5px hsl(var(--primary) / 0.3);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: scale(1.5);
+    box-shadow: 0 0 15px hsl(var(--primary) / 0.6), 0 0 30px hsl(var(--primary) / 0.3);
+  }
+}
+
+.htb-glow-point {
+  animation: htb-glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes htb-scan {
+  0% { 
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% { 
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+.htb-scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    hsl(var(--primary) / 0.5) 20%, 
+    hsl(var(--primary)) 50%, 
+    hsl(var(--primary) / 0.5) 80%, 
+    transparent
+  );
+  box-shadow: 
+    0 0 20px hsl(var(--primary) / 0.5),
+    0 0 40px hsl(var(--primary) / 0.3),
+    0 0 60px hsl(var(--primary) / 0.1);
+  animation: htb-scan 8s ease-in-out infinite;
+}
+
+@keyframes htb-particle-float {
+  0%, 100% { 
+    transform: translate(0, 0) scale(1);
+    opacity: 0.3;
+  }
+  25% { 
+    transform: translate(10px, -20px) scale(1.2);
+    opacity: 0.7;
+  }
+  50% { 
+    transform: translate(-5px, -40px) scale(0.8);
+    opacity: 0.5;
+  }
+  75% { 
+    transform: translate(15px, -60px) scale(1.1);
+    opacity: 0.6;
+  }
+}
+
+.htb-particle {
+  animation: htb-particle-float 8s ease-in-out infinite;
+}
+
+@keyframes htb-corner-pulse {
+  0%, 100% { 
+    opacity: 0.3;
+  }
+  50% { 
+    opacity: 0.8;
+  }
+}
+
+.htb-corner-line {
+  animation: htb-corner-pulse 2s ease-in-out infinite;
+}

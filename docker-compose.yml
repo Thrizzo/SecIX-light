@@ -1,0 +1,146 @@
+# =============================================================================
+# SecIX Light Edition - Docker Compose
+# =============================================================================
+# Core GRC features (Dashboard, Security Journey, Risk, Controls, Assets) + AI
+# 
+# Quick Start:
+#   cp .env.example .env
+#   docker compose up -d
+#
+# With Ollama AI:
+#   docker compose --profile ollama up -d
+#
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: secix-light-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secix_light_password}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-scripts:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - secix-light-network
+
+  # ---------------------------------------------------------------------------
+  # Ollama AI Service (optional - use --profile ollama)
+  # ---------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: secix-light-ollama
+    restart: unless-stopped
+    profiles:
+      - ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - secix-light-network
+    # Uncomment below if you have NVIDIA GPU
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # ---------------------------------------------------------------------------
+  # API Server
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: secix-light-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-secix_light_password}@db:5432/${POSTGRES_DB:-postgres}
+      JWT_SECRET: ${JWT_SECRET:-your-jwt-secret-change-in-production}
+      # AI Configuration
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+    ports:
+      - "${API_PORT:-3001}:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - secix-light-network
+
+  # ---------------------------------------------------------------------------
+  # Frontend (SecIX Light)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        VITE_DEPLOYMENT_MODE: docker
+        VITE_EDITION: light
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3001}
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-http://localhost:3001}
+        VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY:-local-dev-key}
+        VITE_SUPABASE_PROJECT_ID: ${VITE_SUPABASE_PROJECT_ID:-local}
+    container_name: secix-light-frontend
+    restart: unless-stopped
+    environment:
+      RUNTIME_API_UPSTREAM: api
+      RUNTIME_API_URL: ${RUNTIME_API_URL:-http://api:3001}
+      RUNTIME_SUPABASE_URL: ${RUNTIME_SUPABASE_URL:-}
+      RUNTIME_SUPABASE_ANON_KEY: ${RUNTIME_SUPABASE_ANON_KEY:-}
+      RUNTIME_EDITION: light
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - secix-light-network
+
+volumes:
+  postgres_data:
+    name: secix-light-postgres-data
+  ollama_data:
+    name: secix-light-ollama-data
+
+networks:
+  secix-light-network:
+    name: secix-light-network
+    driver: bridge
