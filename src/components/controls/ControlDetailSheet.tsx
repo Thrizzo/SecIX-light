@@ -529,19 +529,47 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                   <TabsContent value="compliance" className="mt-4">
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-sm font-medium">Compliance</CardTitle>
-                        <CardDescription>Track implementation quality and deviations for this internal control.</CardDescription>
+                        <CardTitle className="text-sm font-medium">Compliance Assessment</CardTitle>
+                        <CardDescription>Evaluate and manually set compliance status for this internal control.</CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Status</p>
-                          <Badge variant={getComplianceVariant((control as any)?.compliance_status)}>
-                            {getComplianceLabel((control as any)?.compliance_status)}
-                          </Badge>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Compliance Status</Label>
+                          <Select
+                            value={(control as any)?.compliance_status || 'not_assessed'}
+                            onValueChange={async (value) => {
+                              if (!controlId) return;
+                              await updateControl.mutateAsync({
+                                id: controlId,
+                                compliance_status: value as any,
+                              });
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover">
+                              <SelectItem value="not_assessed">Not Assessed</SelectItem>
+                              <SelectItem value="compliant">Compliant</SelectItem>
+                              <SelectItem value="minor_deviation">Minor Deviation</SelectItem>
+                              <SelectItem value="major_deviation">Major Deviation</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Notes</p>
-                          <p className="text-sm whitespace-pre-wrap">{(control as any)?.compliance_notes || '—'}</p>
+                        <div className="space-y-2">
+                          <Label>Compliance Notes</Label>
+                          <Textarea
+                            placeholder="Add notes about this compliance assessment..."
+                            defaultValue={(control as any)?.compliance_notes || ''}
+                            onBlur={async (e) => {
+                              if (!controlId) return;
+                              await updateControl.mutateAsync({
+                                id: controlId,
+                                compliance_notes: e.target.value || null,
+                              });
+                            }}
+                            rows={4}
+                          />
                         </div>
                       </CardContent>
                     </Card>
