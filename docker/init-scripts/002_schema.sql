@@ -581,6 +581,8 @@ CREATE TABLE IF NOT EXISTS public.framework_controls (
   applicability TEXT DEFAULT 'applicable',
   soa_justification TEXT,
   soa_responsible_party TEXT,
+  compliance_status TEXT DEFAULT 'not_assessed',
+  compliance_notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (framework_id, control_code)
@@ -645,6 +647,8 @@ CREATE TABLE IF NOT EXISTS public.internal_controls (
   testing_frequency TEXT,
   automation_status TEXT,
   notes TEXT,
+  compliance_status TEXT DEFAULT 'not_assessed',
+  compliance_notes TEXT,
   created_by UUID REFERENCES public.profiles(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -661,6 +665,8 @@ ALTER TABLE public.internal_controls
   ADD COLUMN IF NOT EXISTS legacy_control_id TEXT,
   ADD COLUMN IF NOT EXISTS effective_date DATE,
   ADD COLUMN IF NOT EXISTS review_date DATE,
+  ADD COLUMN IF NOT EXISTS compliance_status TEXT DEFAULT 'not_assessed',
+  ADD COLUMN IF NOT EXISTS compliance_notes TEXT,
   ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 
 -- Create internal_control_framework_map table for framework mappings
@@ -1910,6 +1916,8 @@ ALTER TABLE public.framework_controls ADD COLUMN IF NOT EXISTS control_type TEXT
 ALTER TABLE public.framework_controls ADD COLUMN IF NOT EXISTS security_function TEXT;
 ALTER TABLE public.framework_controls ADD COLUMN IF NOT EXISTS reference_links TEXT;
 ALTER TABLE public.framework_controls ADD COLUMN IF NOT EXISTS source_hash TEXT;
+ALTER TABLE public.framework_controls ADD COLUMN IF NOT EXISTS compliance_status TEXT DEFAULT 'not_assessed';
+ALTER TABLE public.framework_controls ADD COLUMN IF NOT EXISTS compliance_notes TEXT;
 
 -- Risk appetites archive column
 ALTER TABLE public.risk_appetites ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT false;
