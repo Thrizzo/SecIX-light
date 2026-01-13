@@ -539,10 +539,14 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                             value={(control as any)?.compliance_status || 'not_assessed'}
                             onValueChange={async (value) => {
                               if (!controlId) return;
-                              await updateControl.mutateAsync({
-                                id: controlId,
-                                compliance_status: value as any,
-                              });
+                              try {
+                                await updateControl.mutateAsync({
+                                  id: controlId,
+                                  compliance_status: value as any,
+                                });
+                              } catch {
+                                // Mutation already shows a toast; avoid unhandled promise rejection
+                              }
                             }}
                           >
                             <SelectTrigger>
@@ -563,10 +567,14 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                             defaultValue={(control as any)?.compliance_notes || ''}
                             onBlur={async (e) => {
                               if (!controlId) return;
-                              await updateControl.mutateAsync({
-                                id: controlId,
-                                compliance_notes: e.target.value || null,
-                              });
+                              try {
+                                await updateControl.mutateAsync({
+                                  id: controlId,
+                                  compliance_notes: e.target.value || null,
+                                });
+                              } catch {
+                                // Mutation already shows a toast; avoid unhandled promise rejection
+                              }
                             }}
                             rows={4}
                           />

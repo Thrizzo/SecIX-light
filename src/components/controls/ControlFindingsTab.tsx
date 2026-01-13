@@ -7,17 +7,18 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertTriangle, Plus, Trash2, Edit2, XCircle, AlertCircle, Lightbulb, Calendar, ClipboardList, ChevronRight } from 'lucide-react';
-import { 
-  useInternalControlFindings, 
-  useFrameworkControlFindings, 
-  useCreateFinding, 
-  useUpdateFinding, 
+import { AlertTriangle, Plus, Trash2, Edit2, XCircle, AlertCircle, Lightbulb, Calendar, ChevronRight } from 'lucide-react';
+import {
+  useInternalControlFindings,
+  useFrameworkControlFindings,
+  useCreateFinding,
+  useUpdateFinding,
   useDeleteFinding,
   FindingType,
   FindingStatus,
   ControlFinding,
 } from '@/hooks/useControlFindings';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { FindingDetailSheet } from './FindingDetailSheet';
 
@@ -42,10 +43,13 @@ export function ControlFindingsTab({ controlId, controlType, businessUnitId }: C
     due_date: '',
   });
 
-  const { data: findings = [], isLoading } = controlType === 'internal' 
-    ? useInternalControlFindings(controlId)
-    : useFrameworkControlFindings(controlId);
-  
+  const { toast } = useToast();
+
+  const findingsQuery =
+    controlType === 'internal' ? useInternalControlFindings(controlId) : useFrameworkControlFindings(controlId);
+
+  const { data: findings = [], isLoading, error } = findingsQuery;
+
   const createFinding = useCreateFinding();
   const updateFinding = useUpdateFinding();
   const deleteFinding = useDeleteFinding();
@@ -78,22 +82,27 @@ export function ControlFindingsTab({ controlId, controlType, businessUnitId }: C
   const handleSubmit = async () => {
     if (!formData.title.trim()) return;
 
-    if (editingFinding) {
-      await updateFinding.mutateAsync({
-        id: editingFinding.id,
-        ...formData,
-        due_date: formData.due_date || null,
-        closed_date: formData.status === 'Closed' ? new Date().toISOString().split('T')[0] : null,
-      });
-    } else {
-      await createFinding.mutateAsync({
-        ...(controlType === 'internal' ? { internal_control_id: controlId } : { framework_control_id: controlId }),
-        ...formData,
-        due_date: formData.due_date || null,
-        business_unit_id: businessUnitId,
-      });
+    try {
+      if (editingFinding) {
+        await updateFinding.mutateAsync({
+          id: editingFinding.id,
+          ...formData,
+          due_date: formData.due_date || null,
+          closed_date: formData.status === 'Closed' ? new Date().toISOString().split('T')[0] : null,
+        });
+      } else {
+        await createFinding.mutateAsync({
+          ...(controlType === 'internal' ? { internal_control_id: controlId } : { framework_control_id: controlId }),
+          ...formData,
+          due_date: formData.due_date || null,
+          business_unit_id: businessUnitId,
+        });
+      }
+      setDialogOpen(false);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Failed to save finding';
+      toast({ title: 'Failed to save finding', description: message, variant: 'destructive' });
     }
-    setDialogOpen(false);
   };
 
   const getTypeIcon = (type: FindingType) => {
@@ -142,7 +151,25 @@ export function ControlFindingsTab({ controlId, controlType, businessUnitId }: C
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {error ? (
+            <div className="rounded-lg border p-3">
+              <p className="text-sm font-medium">Unable to load findings</p>
+              <p className="text-sm text-muted-foreground mt-1">{(error as any)?.message || 'Request failed.'}</p>
+              {(String((error as any)?.message || '').includes('framework_control_id') ||
+                String((error as any)?.message || '').includes('internal_control_id')) && (
+                <div className="mt-3">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Your self-hosted database schema is out of date. Apply the latest DB update (or recreate the DB volume).
+                  </p>
+                  <pre className="text-xs whitespace-pre-wrap rounded-md bg-muted p-2">
+{`-- Add missing linkage columns for findings (safe to run multiple times)
+ALTER TABLE public.control_findings
+  ADD COLUMN IF NOT EXISTS internal_control_id UUID REFERENCES public.internal_controls(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS framework_control_id UUID REFERENCES public.framework_controls(id) ON DELETE SET NULL;`}</pre>
+                </div>
+              )}
+            </div>
+          ) : isLoading ? (
             <p className="text-sm text-muted-foreground">Loading findings...</p>
           ) : findings.length > 0 ? (
             <div className="space-y-3">

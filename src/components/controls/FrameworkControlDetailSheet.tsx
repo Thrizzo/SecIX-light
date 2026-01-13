@@ -153,8 +153,19 @@ export function FrameworkControlDetailSheet({
 
   const handleSave = async () => {
     if (!controlId) return;
-    await updateControl.mutateAsync({ id: controlId, ...editData });
-    setIsEditing(false);
+    try {
+      await updateControl.mutateAsync({ id: controlId, ...editData });
+      setIsEditing(false);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Failed to save changes';
+      toast({
+        title: 'Failed to save control',
+        description: message.includes('compliance_status')
+          ? 'Your self-hosted database is missing the compliance_status column. Apply the latest DB update (or recreate the DB volume) to enable Compliance.'
+          : message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleAddMapping = async () => {
@@ -441,10 +452,21 @@ export function FrameworkControlDetailSheet({
                           value={(control as any)?.compliance_status || 'not_assessed'}
                           onValueChange={async (value) => {
                             if (!controlId) return;
-                            await updateControl.mutateAsync({
-                              id: controlId,
-                              compliance_status: value as 'compliant' | 'minor_deviation' | 'major_deviation' | 'not_assessed',
-                            });
+                            try {
+                              await updateControl.mutateAsync({
+                                id: controlId,
+                                compliance_status: value as 'compliant' | 'minor_deviation' | 'major_deviation' | 'not_assessed',
+                              });
+                            } catch (e) {
+                              const message = e instanceof Error ? e.message : 'Update failed';
+                              toast({
+                                title: 'Compliance update failed',
+                                description: message.includes('compliance_status')
+                                  ? 'Your self-hosted database is missing the compliance_status column. Apply the latest DB update (or recreate the DB volume) to enable Compliance.'
+                                  : message,
+                                variant: 'destructive',
+                              });
+                            }
                           }}
                         >
                           <SelectTrigger>
@@ -465,10 +487,21 @@ export function FrameworkControlDetailSheet({
                           defaultValue={(control as any)?.compliance_notes || ''}
                           onBlur={async (e) => {
                             if (!controlId) return;
-                            await updateControl.mutateAsync({
-                              id: controlId,
-                              compliance_notes: e.target.value || null,
-                            });
+                            try {
+                              await updateControl.mutateAsync({
+                                id: controlId,
+                                compliance_notes: e.target.value || null,
+                              });
+                            } catch (e2) {
+                              const message = e2 instanceof Error ? e2.message : 'Update failed';
+                              toast({
+                                title: 'Compliance notes update failed',
+                                description: message.includes('compliance_notes') || message.includes('compliance_status')
+                                  ? 'Your self-hosted database is missing the compliance columns. Apply the latest DB update (or recreate the DB volume) to enable Compliance.'
+                                  : message,
+                                variant: 'destructive',
+                              });
+                            }
                           }}
                           rows={4}
                         />
