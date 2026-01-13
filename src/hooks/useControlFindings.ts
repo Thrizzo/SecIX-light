@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/database/client';
+import { config } from '@/lib/config';
 import { useToast } from '@/hooks/use-toast';
 
 export type FindingType = 'Major Deviation' | 'Minor Deviation' | 'Opportunity for Improvement';
@@ -177,19 +178,34 @@ export function useInternalControlFindings(controlId?: string) {
     queryKey: ['control-findings', 'internal', controlId],
     queryFn: async () => {
       if (!controlId) return [];
-      const { data, error } = await supabase
-        .from('control_findings')
-        .select(`
+
+      // Self-hosted deployments often don't have stable PostgREST FK constraint names,
+      // so embedded selects like profiles!some_fk(...) can 400.
+      const selectClause = config.isSelfHosted()
+        ? '*'
+        : `
           *,
           assigned_profile:profiles!control_findings_assigned_to_fkey(id, full_name)
-        `)
+        `;
+
+      const { data, error } = await supabase
+        .from('control_findings')
+        .select(selectClause)
         .eq('internal_control_id', controlId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        if (config.isSelfHosted()) {
+          console.warn('useInternalControlFindings failed in self-hosted mode:', error.message);
+          return [];
+        }
+        throw error;
+      }
+
       return data as ControlFinding[];
     },
     enabled: !!controlId,
+    retry: config.isSelfHosted() ? false : 3,
   });
 }
 
@@ -199,19 +215,32 @@ export function useFrameworkControlFindings(controlId?: string) {
     queryKey: ['control-findings', 'framework', controlId],
     queryFn: async () => {
       if (!controlId) return [];
-      const { data, error } = await supabase
-        .from('control_findings')
-        .select(`
+
+      const selectClause = config.isSelfHosted()
+        ? '*'
+        : `
           *,
           assigned_profile:profiles!control_findings_assigned_to_fkey(id, full_name)
-        `)
+        `;
+
+      const { data, error } = await supabase
+        .from('control_findings')
+        .select(selectClause)
         .eq('framework_control_id', controlId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        if (config.isSelfHosted()) {
+          console.warn('useFrameworkControlFindings failed in self-hosted mode:', error.message);
+          return [];
+        }
+        throw error;
+      }
+
       return data as ControlFinding[];
     },
     enabled: !!controlId,
+    retry: config.isSelfHosted() ? false : 3,
   });
 }
 
