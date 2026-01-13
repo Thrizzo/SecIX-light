@@ -8,11 +8,13 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Shield, Link2, FileText, AlertTriangle, User, Building2, Clock, 
-  Plus, Trash2, ExternalLink, Layers, Upload, Download, Eye 
+  Plus, Trash2, ExternalLink, Layers, Upload, Download, Eye, Pencil, X, Save 
 } from 'lucide-react';
-import { useInternalControl } from '@/hooks/useInternalControls';
+import { useInternalControl, useUpdateInternalControl, CONTROL_TYPES, AUTOMATION_LEVELS, CONTROL_FREQUENCIES, CONTROL_STATUSES } from '@/hooks/useInternalControls';
 import { 
   useControlFrameworkMappings, 
   useRiskControlLinks,
@@ -35,8 +37,19 @@ interface ControlDetailSheetProps {
 
 export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDetailSheetProps) {
   const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [evidenceName, setEvidenceName] = useState('');
+  
+  // Edit form state
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editControlType, setEditControlType] = useState('');
+  const [editSecurityFunction, setEditSecurityFunction] = useState('');
+  const [editAutomationLevel, setEditAutomationLevel] = useState('');
+  const [editFrequency, setEditFrequency] = useState('');
+  const [editStatus, setEditStatus] = useState('');
+  const [editSystemScope, setEditSystemScope] = useState('');
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -53,6 +66,51 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
   const deleteRiskLink = useDeleteRiskControlLink();
   const uploadEvidence = useUploadControlEvidence();
   const deleteEvidence = useDeleteControlEvidence();
+  const updateControl = useUpdateInternalControl();
+
+  // Initialize edit form when control loads or edit mode starts
+  const initializeEditForm = () => {
+    if (control) {
+      setEditTitle(control.title || '');
+      setEditDescription(control.description || '');
+      setEditControlType(control.control_type || '');
+      setEditSecurityFunction(control.security_function || '');
+      setEditAutomationLevel(control.automation_level || '');
+      setEditFrequency(control.frequency || '');
+      setEditStatus(control.status || '');
+      setEditSystemScope(control.system_scope || '');
+    }
+  };
+
+  const handleStartEdit = () => {
+    initializeEditForm();
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!controlId) return;
+    
+    try {
+      await updateControl.mutateAsync({
+        id: controlId,
+        title: editTitle,
+        description: editDescription || null,
+        control_type: editControlType || null,
+        security_function: editSecurityFunction || null,
+        automation_level: editAutomationLevel || null,
+        frequency: editFrequency || null,
+        status: editStatus || 'Draft',
+        system_scope: editSystemScope || null,
+      });
+      setIsEditing(false);
+    } catch (error) {
+      // Error handled by mutation
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -222,109 +280,250 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                   </TabsList>
 
                   <TabsContent value="overview" className="space-y-4 mt-4">
-                    {/* Description */}
-                    {control?.description && (
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium">Description</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{control.description}</p>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Control Properties */}
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Control Properties</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="space-y-1">
-                            <p className="text-muted-foreground">Control Type</p>
-                            <p className="font-medium">{control?.control_type || '-'}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-muted-foreground">Security Function</p>
-                            {control?.security_function ? <Badge variant="outline">{control.security_function}</Badge> : <p className="font-medium">-</p>}
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-muted-foreground">Automation Level</p>
-                            <p className="font-medium">{(control as any)?.automation_level || '-'}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-muted-foreground">Frequency</p>
-                            <p className="font-medium">{(control as any)?.frequency || '-'}</p>
-                          </div>
+                    {/* Edit/View Toggle */}
+                    <div className="flex justify-end">
+                      {isEditing ? (
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                            <X className="h-4 w-4 mr-1" />
+                            Cancel
+                          </Button>
+                          <Button size="sm" onClick={handleSaveEdit} disabled={updateControl.isPending}>
+                            <Save className="h-4 w-4 mr-1" />
+                            {updateControl.isPending ? 'Saving...' : 'Save Changes'}
+                          </Button>
                         </div>
-
-                        {(control as any)?.system_scope && (
-                          <>
-                            <Separator />
-                            <div className="space-y-1">
-                              <p className="text-muted-foreground text-sm">System Scope</p>
-                              <p className="text-sm">{(control as any).system_scope}</p>
-                            </div>
-                          </>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    {/* Ownership */}
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Ownership & Organization</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">Owner</p>
-                            <p className="font-medium">{(control as any)?.owner?.full_name || 'Unassigned'}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Building2 className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">Business Unit</p>
-                            <p className="font-medium">{(control as any)?.business_unit?.name || 'Not specified'}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm text-muted-foreground">Last Updated</p>
-                            <p className="font-medium">{control?.updated_at ? format(new Date(control.updated_at), 'MMM d, yyyy') : '-'}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Quick Stats */}
-                    <div className="grid grid-cols-3 gap-4">
-                      <Card>
-                        <CardContent className="pt-4 text-center">
-                          <Layers className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                          <p className="text-2xl font-bold">{frameworkMappings.length}</p>
-                          <p className="text-xs text-muted-foreground">Framework Mappings</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4 text-center">
-                          <AlertTriangle className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                          <p className="text-2xl font-bold">{riskLinks.length}</p>
-                          <p className="text-xs text-muted-foreground">Linked Risks</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="pt-4 text-center">
-                          <FileText className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                          <p className="text-2xl font-bold">{evidenceItems.length}</p>
-                          <p className="text-xs text-muted-foreground">Evidence Items</p>
-                        </CardContent>
-                      </Card>
+                      ) : (
+                        <Button variant="outline" size="sm" onClick={handleStartEdit}>
+                          <Pencil className="h-4 w-4 mr-1" />
+                          Edit Control
+                        </Button>
+                      )}
                     </div>
+
+                    {isEditing ? (
+                      /* Edit Mode */
+                      <>
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium">Basic Information</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Title</Label>
+                              <Input
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                placeholder="Control title"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Description</Label>
+                              <Textarea
+                                value={editDescription}
+                                onChange={(e) => setEditDescription(e.target.value)}
+                                placeholder="Control description"
+                                rows={4}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Status</Label>
+                              <Select value={editStatus} onValueChange={setEditStatus}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover">
+                                  {CONTROL_STATUSES.map((status) => (
+                                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium">Control Properties</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Control Type</Label>
+                                <Select value={editControlType} onValueChange={setEditControlType}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-popover">
+                                    {CONTROL_TYPES.map((type) => (
+                                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Security Function</Label>
+                                <Select value={editSecurityFunction} onValueChange={setEditSecurityFunction}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select function" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-popover">
+                                    <SelectItem value="Govern">Govern</SelectItem>
+                                    <SelectItem value="Identify">Identify</SelectItem>
+                                    <SelectItem value="Protect">Protect</SelectItem>
+                                    <SelectItem value="Detect">Detect</SelectItem>
+                                    <SelectItem value="Respond">Respond</SelectItem>
+                                    <SelectItem value="Recover">Recover</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Automation Level</Label>
+                                <Select value={editAutomationLevel} onValueChange={setEditAutomationLevel}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select level" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-popover">
+                                    {AUTOMATION_LEVELS.map((level) => (
+                                      <SelectItem key={level} value={level}>{level}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Frequency</Label>
+                                <Select value={editFrequency} onValueChange={setEditFrequency}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select frequency" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-popover">
+                                    {CONTROL_FREQUENCIES.map((freq) => (
+                                      <SelectItem key={freq} value={freq}>{freq}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>System Scope</Label>
+                              <Textarea
+                                value={editSystemScope}
+                                onChange={(e) => setEditSystemScope(e.target.value)}
+                                placeholder="Define the system scope for this control"
+                                rows={2}
+                              />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </>
+                    ) : (
+                      /* View Mode */
+                      <>
+                        {/* Description */}
+                        {control?.description && (
+                          <Card>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-sm font-medium">Description</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{control.description}</p>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                        {/* Control Properties */}
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium">Control Properties</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">Control Type</p>
+                                <p className="font-medium">{control?.control_type || '-'}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">Security Function</p>
+                                {control?.security_function ? <Badge variant="outline">{control.security_function}</Badge> : <p className="font-medium">-</p>}
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">Automation Level</p>
+                                <p className="font-medium">{(control as any)?.automation_level || '-'}</p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-muted-foreground">Frequency</p>
+                                <p className="font-medium">{(control as any)?.frequency || '-'}</p>
+                              </div>
+                            </div>
+
+                            {(control as any)?.system_scope && (
+                              <>
+                                <Separator />
+                                <div className="space-y-1">
+                                  <p className="text-muted-foreground text-sm">System Scope</p>
+                                  <p className="text-sm">{(control as any).system_scope}</p>
+                                </div>
+                              </>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        {/* Ownership */}
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium">Ownership & Organization</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="flex items-center gap-3">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm text-muted-foreground">Owner</p>
+                                <p className="font-medium">{(control as any)?.owner?.full_name || 'Unassigned'}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm text-muted-foreground">Business Unit</p>
+                                <p className="font-medium">{(control as any)?.business_unit?.name || 'Not specified'}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="text-sm text-muted-foreground">Last Updated</p>
+                                <p className="font-medium">{control?.updated_at ? format(new Date(control.updated_at), 'MMM d, yyyy') : '-'}</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Quick Stats */}
+                        <div className="grid grid-cols-3 gap-4">
+                          <Card>
+                            <CardContent className="pt-4 text-center">
+                              <Layers className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                              <p className="text-2xl font-bold">{frameworkMappings.length}</p>
+                              <p className="text-xs text-muted-foreground">Framework Mappings</p>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent className="pt-4 text-center">
+                              <AlertTriangle className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                              <p className="text-2xl font-bold">{riskLinks.length}</p>
+                              <p className="text-xs text-muted-foreground">Linked Risks</p>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardContent className="pt-4 text-center">
+                              <FileText className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                              <p className="text-2xl font-bold">{evidenceItems.length}</p>
+                              <p className="text-xs text-muted-foreground">Evidence Items</p>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="compliance" className="mt-4">
@@ -448,7 +647,7 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                   </TabsContent>
 
                   <TabsContent value="findings" className="mt-4">
-                    <ControlFindingsTab findings={findings as any} entityType="internal_control" entityId={controlId || ''} />
+                    <ControlFindingsTab controlId={controlId || ''} controlType="internal" businessUnitId={(control as any)?.business_unit_id} />
                   </TabsContent>
 
                   <TabsContent value="evidence" className="mt-4">

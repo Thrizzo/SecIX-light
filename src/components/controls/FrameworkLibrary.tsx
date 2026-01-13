@@ -319,14 +319,6 @@ export function FrameworkLibrary() {
                                             <Eye className="h-4 w-4 mr-2" />
                                             View Details
                                           </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => handleOpenControl(control.id, 'edit')}>
-                                            <Edit2 className="h-4 w-4 mr-2" />
-                                            Edit Control
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => handleOpenControl(control.id, 'map')}>
-                                            <Link2 className="h-4 w-4 mr-2" />
-                                            Map to Internal
-                                          </DropdownMenuItem>
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem className="text-destructive" onClick={() => deleteControl.mutate(control.id)}>
                                             <Trash2 className="h-4 w-4 mr-2" />

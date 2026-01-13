@@ -12,9 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   XCircle, AlertCircle, Lightbulb, Calendar, Plus, Trash2, 
-  ChevronDown, ChevronUp, CheckCircle2, Clock, ClipboardList, Save, Loader2
+  ChevronDown, ChevronUp, CheckCircle2, Clock, ClipboardList, Save, Loader2, Edit2, X
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/database/client';
 import { 
   useFindingPoams,
@@ -33,6 +33,7 @@ import {
   FindingMilestone,
 } from '@/hooks/useControlFindings';
 import { useProfiles } from '@/hooks/useRisks';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
 interface FindingDetailSheetProps {
@@ -43,6 +44,8 @@ interface FindingDetailSheetProps {
 
 const POAM_STATUSES: PoamStatus[] = ['draft', 'active', 'completed', 'cancelled'];
 const MILESTONE_STATUSES: MilestoneStatus[] = ['pending', 'in_progress', 'completed', 'overdue'];
+const FINDING_TYPES: FindingType[] = ['Major Deviation', 'Minor Deviation', 'Opportunity for Improvement'];
+const FINDING_STATUSES: FindingStatus[] = ['Open', 'In Progress', 'Closed', 'Accepted'];
 
 type FindingRow = {
   id: string;
@@ -53,6 +56,8 @@ type FindingRow = {
   identified_date: string;
   due_date: string | null;
   remediation_plan: string | null;
+  internal_control_id: string | null;
+  framework_control_id: string | null;
 };
 
 export function FindingDetailSheet({ open, onOpenChange, findingId }: FindingDetailSheetProps) {
@@ -61,14 +66,26 @@ export function FindingDetailSheet({ open, onOpenChange, findingId }: FindingDet
   const [expandedPoamIds, setExpandedPoamIds] = useState<Set<string>>(new Set());
   const [showMilestoneForm, setShowMilestoneForm] = useState<string | null>(null);
   const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: '',
+    finding_type: '' as FindingType,
+    status: '' as FindingStatus,
+    description: '',
+    identified_date: '',
+    due_date: '',
+    remediation_plan: '',
+  });
   
   const [poamForm, setPoamForm] = useState({ name: '', owner_id: '', description: '', start_date: '', end_date: '' });
   const [milestoneForm, setMilestoneForm] = useState({ title: '', owner_id: '', description: '', due_date: '' });
 
   const { data: profiles = [] } = useProfiles();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Fetch finding details
-  const { data: finding, isLoading } = useQuery({
+  const { data: finding, isLoading, refetch: refetchFinding } = useQuery({
     queryKey: ['finding-detail', findingId],
     queryFn: async () => {
       if (!findingId) return null;
@@ -82,6 +99,56 @@ export function FindingDetailSheet({ open, onOpenChange, findingId }: FindingDet
     },
     enabled: !!findingId && open,
   });
+
+  // Update finding mutation
+  const updateFinding = useMutation({
+    mutationFn: async (updates: Partial<FindingRow>) => {
+      if (!findingId) throw new Error('No finding ID');
+      const { data, error } = await supabase
+        .from('control_findings')
+        .update(updates)
+        .eq('id', findingId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['finding-detail', findingId] });
+      queryClient.invalidateQueries({ queryKey: ['control-findings'] });
+      toast({ title: 'Finding updated successfully' });
+      setIsEditingDetails(false);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Failed to update finding', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const handleStartEdit = () => {
+    if (!finding) return;
+    setEditForm({
+      title: finding.title || '',
+      finding_type: finding.finding_type as FindingType,
+      status: finding.status as FindingStatus,
+      description: finding.description || '',
+      identified_date: finding.identified_date || '',
+      due_date: finding.due_date || '',
+      remediation_plan: finding.remediation_plan || '',
+    });
+    setIsEditingDetails(true);
+  };
+
+  const handleSaveEdit = async () => {
+    await updateFinding.mutateAsync({
+      title: editForm.title,
+      finding_type: editForm.finding_type,
+      status: editForm.status,
+      description: editForm.description || null,
+      identified_date: editForm.identified_date,
+      due_date: editForm.due_date || null,
+      remediation_plan: editForm.remediation_plan || null,
+    });
+  };
 
   const { data: poams = [], refetch: refetchPoams } = useFindingPoams(findingId || undefined);
   const { data: milestones = [], refetch: refetchMilestones } = useFindingMilestones(findingId || undefined);
@@ -129,17 +196,25 @@ export function FindingDetailSheet({ open, onOpenChange, findingId }: FindingDet
         <ScrollArea className="h-full">
           <div className="p-6">
             <SheetHeader className="pb-4">
-              <div className="flex items-start gap-3">
-                {finding && getTypeIcon(finding.finding_type as FindingType)}
-                <div className="space-y-1">
-                  <SheetTitle className="text-xl">{finding?.title}</SheetTitle>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={getStatusBadgeVariant(finding?.status as FindingStatus)}>
-                      {finding?.status}
-                    </Badge>
-                    <Badge variant="outline">{finding?.finding_type}</Badge>
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  {finding && getTypeIcon(finding.finding_type as FindingType)}
+                  <div className="space-y-1">
+                    <SheetTitle className="text-xl">{finding?.title}</SheetTitle>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getStatusBadgeVariant(finding?.status as FindingStatus)}>
+                        {finding?.status}
+                      </Badge>
+                      <Badge variant="outline">{finding?.finding_type}</Badge>
+                    </div>
                   </div>
                 </div>
+                {!isEditingDetails && (
+                  <Button variant="outline" size="sm" onClick={handleStartEdit}>
+                    <Edit2 className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                )}
               </div>
             </SheetHeader>
 
@@ -162,52 +237,98 @@ export function FindingDetailSheet({ open, onOpenChange, findingId }: FindingDet
                 </TabsList>
 
                 <TabsContent value="details" className="space-y-4 mt-4">
-                  {finding?.description && (
+                  {isEditingDetails ? (
                     <Card>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Description</CardTitle>
+                        <CardTitle className="text-sm font-medium flex items-center justify-between">
+                          Edit Finding
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => setIsEditingDetails(false)}>
+                              <X className="h-4 w-4 mr-1" />
+                              Cancel
+                            </Button>
+                            <Button size="sm" onClick={handleSaveEdit} disabled={updateFinding.isPending}>
+                              {updateFinding.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+                              Save
+                            </Button>
+                          </div>
+                        </CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                          {finding.description}
-                        </p>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Title</Label>
+                          <Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Finding Type</Label>
+                            <Select value={editForm.finding_type} onValueChange={(v) => setEditForm({ ...editForm, finding_type: v as FindingType })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent className="bg-popover">
+                                {FINDING_TYPES.map((t) => (<SelectItem key={t} value={t}>{t}</SelectItem>))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Status</Label>
+                            <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v as FindingStatus })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent className="bg-popover">
+                                {FINDING_STATUSES.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Identified Date</Label>
+                            <Input type="date" value={editForm.identified_date} onChange={(e) => setEditForm({ ...editForm, identified_date: e.target.value })} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Due Date</Label>
+                            <Input type="date" value={editForm.due_date} onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })} />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Description</Label>
+                          <Textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={3} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Remediation Plan</Label>
+                          <Textarea value={editForm.remediation_plan} onChange={(e) => setEditForm({ ...editForm, remediation_plan: e.target.value })} rows={3} />
+                        </div>
                       </CardContent>
                     </Card>
-                  )}
-
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">Details</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="space-y-1">
-                          <p className="text-muted-foreground">Identified Date</p>
-                          <p className="font-medium">
-                            {finding?.identified_date ? format(new Date(finding.identified_date), 'MMM d, yyyy') : '-'}
-                          </p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-muted-foreground">Due Date</p>
-                          <p className="font-medium">
-                            {finding?.due_date ? format(new Date(finding.due_date), 'MMM d, yyyy') : '-'}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {finding?.remediation_plan && (
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Remediation Plan</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                          {finding.remediation_plan}
-                        </p>
-                      </CardContent>
-                    </Card>
+                  ) : (
+                    <>
+                      {finding?.description && (
+                        <Card>
+                          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Description</CardTitle></CardHeader>
+                          <CardContent><p className="text-sm text-muted-foreground whitespace-pre-wrap">{finding.description}</p></CardContent>
+                        </Card>
+                      )}
+                      <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Details</CardTitle></CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="space-y-1">
+                              <p className="text-muted-foreground">Identified Date</p>
+                              <p className="font-medium">{finding?.identified_date ? format(new Date(finding.identified_date), 'MMM d, yyyy') : '-'}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-muted-foreground">Due Date</p>
+                              <p className="font-medium">{finding?.due_date ? format(new Date(finding.due_date), 'MMM d, yyyy') : '-'}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      {finding?.remediation_plan && (
+                        <Card>
+                          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Remediation Plan</CardTitle></CardHeader>
+                          <CardContent><p className="text-sm text-muted-foreground whitespace-pre-wrap">{finding.remediation_plan}</p></CardContent>
+                        </Card>
+                      )}
+                    </>
                   )}
                 </TabsContent>
 

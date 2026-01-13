@@ -522,7 +522,7 @@ export function FrameworkControlDetailSheet({
                 </TabsContent>
 
                 <TabsContent value="findings" className="mt-4">
-                  <ControlFindingsTab findings={findings as any} entityType="framework_control" entityId={controlId || ''} />
+                  <ControlFindingsTab controlId={controlId || ''} controlType="framework" />
                 </TabsContent>
 
                 <TabsContent value="guidance" className="space-y-4 mt-4">

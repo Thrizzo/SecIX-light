@@ -284,14 +284,6 @@ export function InternalControlLibrary() {
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setEditingControl(control.id)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Link2 className="h-4 w-4 mr-2" />
-                            Map to Framework
-                          </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive">
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
