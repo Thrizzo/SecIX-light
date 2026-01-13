@@ -22,6 +22,8 @@ export interface ControlFramework {
   updated_at: string;
 }
 
+export type FrameworkControlComplianceStatus = 'compliant' | 'minor_deviation' | 'major_deviation' | 'not_assessed';
+
 export interface FrameworkControl {
   id: string;
   framework_id: string;
@@ -35,10 +37,17 @@ export interface FrameworkControl {
   implementation_guidance: string | null;
   reference_links: string | null;
   security_function: string | null;
+  compliance_status: FrameworkControlComplianceStatus;
+  compliance_notes: string | null;
   source_hash: string | null;
   created_at: string;
   updated_at: string;
 }
+
+// Helper to check if a framework control can be used for risk mitigation
+export const isFrameworkControlCompliant = (status: FrameworkControlComplianceStatus | null | undefined): boolean => {
+  return status === 'compliant' || status === 'minor_deviation';
+};
 
 export interface CreateFrameworkInput {
   name: string;

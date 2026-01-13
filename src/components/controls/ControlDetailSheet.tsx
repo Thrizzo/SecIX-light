@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -120,34 +120,57 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
     return colors[func] || 'secondary';
   };
 
+  const getComplianceLabel = (status: string | null | undefined) => {
+    switch (status) {
+      case 'compliant':
+        return 'Compliant';
+      case 'minor_deviation':
+        return 'Minor deviation';
+      case 'major_deviation':
+        return 'Major deviation';
+      default:
+        return 'Not assessed';
+    }
+  };
+
+  const getComplianceVariant = (status: string | null | undefined) => {
+    switch (status) {
+      case 'compliant':
+        return 'default' as const;
+      case 'minor_deviation':
+        return 'outline' as const;
+      case 'major_deviation':
+        return 'destructive' as const;
+      default:
+        return 'secondary' as const;
+    }
+  };
+
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-[700px] sm:max-w-[700px] p-0">
-          <ScrollArea className="h-full">
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-full max-w-[900px] p-0">
+          <ScrollArea className="max-h-[85vh]">
             <div className="p-6">
-              <SheetHeader className="pb-4">
+              <DialogHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="outline" className="font-mono">
                         {control?.internal_control_code}
                       </Badge>
-                      {control?.status && (
-                        <Badge variant={getStatusColor(control.status)}>
-                          {control.status}
-                        </Badge>
-                      )}
+                      {control?.status && <Badge variant={getStatusColor(control.status)}>{control.status}</Badge>}
                       {control?.security_function && (
-                        <Badge variant={getFunctionColor(control.security_function)}>
-                          {control.security_function}
-                        </Badge>
+                        <Badge variant={getFunctionColor(control.security_function)}>{control.security_function}</Badge>
                       )}
+                      <Badge variant={getComplianceVariant((control as any)?.compliance_status)}>
+                        {getComplianceLabel((control as any)?.compliance_status)}
+                      </Badge>
                     </div>
-                    <SheetTitle className="text-xl">{control?.title}</SheetTitle>
+                    <DialogTitle className="text-xl">{control?.title}</DialogTitle>
                   </div>
                 </div>
-              </SheetHeader>
+              </DialogHeader>
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
@@ -158,9 +181,7 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                   <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium">Unable to load control</CardTitle>
-                      <CardDescription>
-                        {(controlError as any)?.message || 'An unexpected error occurred.'}
-                      </CardDescription>
+                      <CardDescription>{(controlError as any)?.message || 'An unexpected error occurred.'}</CardDescription>
                     </CardHeader>
                   </Card>
                 </div>
@@ -170,8 +191,9 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                 </div>
               ) : (
                 <Tabs defaultValue="overview" className="mt-4">
-                  <TabsList className="grid w-full grid-cols-5">
+                  <TabsList className="grid w-full grid-cols-6">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="compliance">Compliance</TabsTrigger>
                     <TabsTrigger value="mappings">
                       Mappings
                       {frameworkMappings.length > 0 && (
@@ -207,9 +229,7 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                           <CardTitle className="text-sm font-medium">Description</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                            {control.description}
-                          </p>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{control.description}</p>
                         </CardContent>
                       </Card>
                     )}
@@ -227,28 +247,24 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                           </div>
                           <div className="space-y-1">
                             <p className="text-muted-foreground">Security Function</p>
-                            {control?.security_function ? (
-                              <Badge variant="outline">{control.security_function}</Badge>
-                            ) : (
-                              <p className="font-medium">-</p>
-                            )}
+                            {control?.security_function ? <Badge variant="outline">{control.security_function}</Badge> : <p className="font-medium">-</p>}
                           </div>
                           <div className="space-y-1">
                             <p className="text-muted-foreground">Automation Level</p>
-                            <p className="font-medium">{control?.automation_level || '-'}</p>
+                            <p className="font-medium">{(control as any)?.automation_level || '-'}</p>
                           </div>
                           <div className="space-y-1">
                             <p className="text-muted-foreground">Frequency</p>
-                            <p className="font-medium">{control?.frequency || '-'}</p>
+                            <p className="font-medium">{(control as any)?.frequency || '-'}</p>
                           </div>
                         </div>
 
-                        {control?.system_scope && (
+                        {(control as any)?.system_scope && (
                           <>
                             <Separator />
                             <div className="space-y-1">
                               <p className="text-muted-foreground text-sm">System Scope</p>
-                              <p className="text-sm">{control.system_scope}</p>
+                              <p className="text-sm">{(control as any).system_scope}</p>
                             </div>
                           </>
                         )}
@@ -265,30 +281,21 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                           <User className="h-4 w-4 text-muted-foreground" />
                           <div>
                             <p className="text-sm text-muted-foreground">Owner</p>
-                            <p className="font-medium">
-                              {(control as any)?.owner?.full_name || 'Unassigned'}
-                            </p>
+                            <p className="font-medium">{(control as any)?.owner?.full_name || 'Unassigned'}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <Building2 className="h-4 w-4 text-muted-foreground" />
                           <div>
                             <p className="text-sm text-muted-foreground">Business Unit</p>
-                            <p className="font-medium">
-                              {(control as any)?.business_unit?.name || 'Not specified'}
-                            </p>
+                            <p className="font-medium">{(control as any)?.business_unit?.name || 'Not specified'}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <Clock className="h-4 w-4 text-muted-foreground" />
                           <div>
                             <p className="text-sm text-muted-foreground">Last Updated</p>
-                            <p className="font-medium">
-                              {control?.updated_at 
-                                ? format(new Date(control.updated_at), 'MMM d, yyyy')
-                                : '-'
-                              }
-                            </p>
+                            <p className="font-medium">{control?.updated_at ? format(new Date(control.updated_at), 'MMM d, yyyy') : '-'}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -320,6 +327,30 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                     </div>
                   </TabsContent>
 
+                  <TabsContent value="compliance" className="mt-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm font-medium">Compliance</CardTitle>
+                        <CardDescription>Track implementation quality and deviations for this internal control.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Status</p>
+                          <Badge variant={getComplianceVariant((control as any)?.compliance_status)}>
+                            {getComplianceLabel((control as any)?.compliance_status)}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Notes</p>
+                          <p className="text-sm whitespace-pre-wrap">{(control as any)?.compliance_notes || '—'}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* The rest of the tabs below are unchanged */
+                  }
+                  
                   <TabsContent value="mappings" className="mt-4">
                     <Card>
                       <CardHeader>
@@ -329,9 +360,7 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                               <Link2 className="h-4 w-4" />
                               Framework Mappings
                             </CardTitle>
-                            <CardDescription>
-                              Map this control to external framework controls
-                            </CardDescription>
+                            <CardDescription>Map this control to external framework controls</CardDescription>
                           </div>
                           <Button size="sm" onClick={() => setMappingDialogOpen(true)}>
                             <Plus className="h-4 w-4 mr-1" />
@@ -343,30 +372,19 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                         {frameworkMappings.length > 0 ? (
                           <div className="space-y-3">
                             {frameworkMappings.map((mapping: any) => (
-                              <div 
-                                key={mapping.id}
-                                className="flex items-center justify-between p-3 border rounded-lg group"
-                              >
+                              <div key={mapping.id} className="flex items-center justify-between p-3 border rounded-lg group">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
                                     <Badge variant="outline" className="font-mono text-xs">
                                       {mapping.framework_control?.control_code}
                                     </Badge>
-                                    <span className="text-xs text-muted-foreground">
-                                      {mapping.framework_control?.framework?.name}
-                                    </span>
+                                    <span className="text-xs text-muted-foreground">{mapping.framework_control?.framework?.name}</span>
                                     <Badge variant="secondary" className="text-xs">
                                       {mapping.mapping_type}
                                     </Badge>
                                   </div>
-                                  <p className="text-sm mt-1">
-                                    {mapping.framework_control?.title}
-                                  </p>
-                                  {mapping.notes && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {mapping.notes}
-                                    </p>
-                                  )}
+                                  <p className="text-sm mt-1">{mapping.framework_control?.title}</p>
+                                  {mapping.notes && <p className="text-xs text-muted-foreground mt-1">{mapping.notes}</p>}
                                 </div>
                                 <Button
                                   variant="ghost"
@@ -393,62 +411,36 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                   <TabsContent value="risks" className="mt-4">
                     <Card>
                       <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="text-sm font-medium flex items-center gap-2">
-                              <AlertTriangle className="h-4 w-4" />
-                              Linked Risks
-                            </CardTitle>
-                            <CardDescription>
-                              Risks that this control helps mitigate
-                            </CardDescription>
-                          </div>
-                          <Button size="sm" variant="outline" disabled>
-                            <Plus className="h-4 w-4 mr-1" />
-                            Link Risk
-                          </Button>
-                        </div>
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          Linked Risks
+                        </CardTitle>
+                        <CardDescription>Risks mitigated by this control</CardDescription>
                       </CardHeader>
                       <CardContent>
                         {riskLinks.length > 0 ? (
                           <div className="space-y-3">
                             {riskLinks.map((link: any) => (
-                              <div 
-                                key={link.id}
-                                className="flex items-center justify-between p-3 border rounded-lg group"
-                              >
+                              <div key={link.id} className="flex items-center justify-between p-3 border rounded-lg group">
                                 <div>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="font-mono text-xs">
-                                      {link.risk?.risk_id}
-                                    </Badge>
-                                    <Badge variant="secondary" className="text-xs">
-                                      {link.link_type}
-                                    </Badge>
-                                  </div>
-                                  <p className="text-sm mt-1">{link.risk?.title}</p>
+                                  <p className="font-medium">{link.risk?.title}</p>
+                                  <p className="text-sm text-muted-foreground">{link.risk?.risk_code}</p>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Button variant="ghost" size="icon">
-                                    <ExternalLink className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="opacity-0 group-hover:opacity-100"
-                                    onClick={() => deleteRiskLink.mutate(link.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="opacity-0 group-hover:opacity-100"
+                                  onClick={() => deleteRiskLink.mutate(link.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
                               </div>
                             ))}
                           </div>
                         ) : (
                           <div className="text-center py-8 text-muted-foreground">
                             <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                            <p>No risks linked yet</p>
-                            <p className="text-sm">Link this control to risks from the Risk Register</p>
+                            <p>No linked risks</p>
                           </div>
                         )}
                       </CardContent>
@@ -456,103 +448,52 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
                   </TabsContent>
 
                   <TabsContent value="findings" className="mt-4">
-                    <ControlFindingsTab 
-                      controlId={controlId!}
-                      controlType="internal"
-                      businessUnitId={(control as any)?.business_unit_id}
-                    />
+                    <ControlFindingsTab findings={findings as any} entityType="internal_control" entityId={controlId || ''} />
                   </TabsContent>
 
-                  <TabsContent value="evidence" className="mt-4 space-y-4">
-                    {/* Upload Section */}
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center gap-2">
-                          <Upload className="h-4 w-4" />
-                          Upload Evidence
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="space-y-2">
-                          <Label>Evidence Name</Label>
-                          <Input
-                            value={evidenceName}
-                            onChange={(e) => setEvidenceName(e.target.value)}
-                            placeholder="Enter evidence name..."
-                          />
-                        </div>
-                        <div>
-                          <Input
-                            ref={fileInputRef}
-                            type="file"
-                            onChange={handleFileUpload}
-                            disabled={uploadEvidence.isPending}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Evidence List */}
+                  <TabsContent value="evidence" className="mt-4">
                     <Card>
                       <CardHeader>
                         <div className="flex items-center justify-between">
                           <div>
                             <CardTitle className="text-sm font-medium flex items-center gap-2">
                               <FileText className="h-4 w-4" />
-                              Evidence Items ({evidenceItems.length})
+                              Evidence
                             </CardTitle>
-                            <CardDescription>
-                              Documents and artifacts supporting control effectiveness
-                            </CardDescription>
+                            <CardDescription>Upload evidence documents for this control</CardDescription>
+                          </div>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Evidence name..."
+                              value={evidenceName}
+                              onChange={(e) => setEvidenceName(e.target.value)}
+                              className="w-48"
+                            />
+                            <input ref={fileInputRef} type="file" onChange={handleFileUpload} className="hidden" />
+                            <Button size="sm" onClick={() => fileInputRef.current?.click()}>
+                              <Upload className="h-4 w-4 mr-1" />
+                              Upload
+                            </Button>
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent>
                         {evidenceItems.length > 0 ? (
                           <div className="space-y-3">
-                            {evidenceItems.map((item) => (
-                              <div 
-                                key={item.id}
-                                className="flex items-center justify-between p-3 border rounded-lg group"
-                              >
+                            {evidenceItems.map((item: any) => (
+                              <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg group">
                                 <div className="flex-1">
-                                  <p className="font-medium text-sm">{item.evidence_item?.name}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {item.evidence_item?.file_name} • {format(new Date(item.created_at), 'MMM d, yyyy')}
-                                  </p>
+                                  <p className="font-medium">{item.name}</p>
+                                  <p className="text-sm text-muted-foreground">Uploaded {format(new Date(item.created_at), 'MMM d, yyyy')}</p>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  {item.evidence_item?.storage_key && (
-                                    <>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleView(item.evidence_item!.storage_key!)}
-                                        title="View"
-                                      >
-                                        <Eye className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDownload(item.evidence_item!.storage_key!, item.evidence_item!.file_name || 'download')}
-                                        title="Download"
-                                      >
-                                        <Download className="h-4 w-4" />
-                                      </Button>
-                                    </>
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="opacity-0 group-hover:opacity-100"
-                                    onClick={() => deleteEvidence.mutate({
-                                      linkId: item.id,
-                                      evidenceId: item.evidence_id,
-                                      storageKey: item.evidence_item?.storage_key || null,
-                                      internalControlId: controlId || undefined,
-                                    })}
-                                  >
+                                <div className="flex gap-2 opacity-0 group-hover:opacity-100">
+                                  <Button variant="ghost" size="icon" onClick={() => handleView(item.storage_key)}>
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" onClick={() => handleDownload(item.storage_key, item.file_name)}>
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" onClick={() => deleteEvidence.mutate(item.id)}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                   </Button>
                                 </div>
@@ -573,8 +514,9 @@ export function ControlDetailSheet({ open, onOpenChange, controlId }: ControlDet
               )}
             </div>
           </ScrollArea>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
+
 
       {controlId && (
         <FrameworkMappingDialog

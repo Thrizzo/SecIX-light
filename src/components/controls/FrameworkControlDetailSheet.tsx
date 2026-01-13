@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +34,7 @@ interface FrameworkControlDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   controlId?: string | null;
-  initialTab?: 'details' | 'mappings' | 'findings' | 'evidence' | 'guidance';
+  initialTab?: 'details' | 'compliance' | 'mappings' | 'findings' | 'evidence' | 'guidance';
   startEditing?: boolean;
 }
 
@@ -45,7 +45,7 @@ export function FrameworkControlDetailSheet({
   initialTab = 'details',
   startEditing = false,
 }: FrameworkControlDetailSheetProps) {
-  type FrameworkControlTab = 'details' | 'mappings' | 'findings' | 'evidence' | 'guidance';
+  type FrameworkControlTab = 'details' | 'compliance' | 'mappings' | 'findings' | 'evidence' | 'guidance';
 
   const [activeTab, setActiveTab] = useState<FrameworkControlTab>(initialTab);
   const [isEditing, setIsEditing] = useState(false);
@@ -187,14 +187,40 @@ export function FrameworkControlDetailSheet({
     return colors[func] || 'secondary';
   };
 
+  const getComplianceLabel = (status: string | null | undefined) => {
+    switch (status) {
+      case 'compliant':
+        return 'Compliant';
+      case 'minor_deviation':
+        return 'Minor deviation';
+      case 'major_deviation':
+        return 'Major deviation';
+      default:
+        return 'Not assessed';
+    }
+  };
+
+  const getComplianceVariant = (status: string | null | undefined) => {
+    switch (status) {
+      case 'compliant':
+        return 'default' as const;
+      case 'minor_deviation':
+        return 'outline' as const;
+      case 'major_deviation':
+        return 'destructive' as const;
+      default:
+        return 'secondary' as const;
+    }
+  };
+
   if (!control && !isLoading) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[700px] sm:max-w-[700px] p-0">
-        <ScrollArea className="h-full">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full max-w-[900px] p-0">
+        <ScrollArea className="max-h-[85vh]">
           <div className="p-6">
-            <SheetHeader className="pb-4">
+            <DialogHeader className="pb-4">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -202,17 +228,16 @@ export function FrameworkControlDetailSheet({
                       {control?.control_code}
                     </Badge>
                     {(control as any)?.framework?.name && (
-                      <Badge variant="secondary">
-                        {(control as any).framework.name}
-                      </Badge>
+                      <Badge variant="secondary">{(control as any).framework.name}</Badge>
                     )}
                     {control?.security_function && (
-                      <Badge variant={getFunctionColor(control.security_function)}>
-                        {control.security_function}
-                      </Badge>
+                      <Badge variant={getFunctionColor(control.security_function)}>{control.security_function}</Badge>
                     )}
+                    <Badge variant={getComplianceVariant((control as any)?.compliance_status)}>
+                      {getComplianceLabel((control as any)?.compliance_status)}
+                    </Badge>
                   </div>
-                  <SheetTitle className="text-xl">{control?.title}</SheetTitle>
+                  <DialogTitle className="text-xl">{control?.title}</DialogTitle>
                 </div>
                 {!isEditing && (
                   <Button variant="outline" size="sm" onClick={handleEdit}>
@@ -221,7 +246,7 @@ export function FrameworkControlDetailSheet({
                   </Button>
                 )}
               </div>
-            </SheetHeader>
+            </DialogHeader>
 
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
@@ -229,8 +254,9 @@ export function FrameworkControlDetailSheet({
               </div>
             ) : (
               <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="mt-4">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-6">
                   <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="compliance">Compliance</TabsTrigger>
                   <TabsTrigger value="mappings">
                     Mappings
                     {internalMappings.length > 0 && (
@@ -280,23 +306,19 @@ export function FrameworkControlDetailSheet({
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>Control Code</Label>
-                            <Input
-                              value={editData.control_code}
-                              onChange={(e) => setEditData({ ...editData, control_code: e.target.value })}
-                            />
+                            <Input value={editData.control_code} onChange={(e) => setEditData({ ...editData, control_code: e.target.value })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Security Function</Label>
-                            <Select
-                              value={editData.security_function}
-                              onValueChange={(v) => setEditData({ ...editData, security_function: v })}
-                            >
+                            <Select value={editData.security_function} onValueChange={(v) => setEditData({ ...editData, security_function: v })}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select..." />
                               </SelectTrigger>
                               <SelectContent className="bg-popover">
                                 {SECURITY_FUNCTIONS.map((fn) => (
-                                  <SelectItem key={fn} value={fn}>{fn}</SelectItem>
+                                  <SelectItem key={fn} value={fn}>
+                                    {fn}
+                                  </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
@@ -304,68 +326,45 @@ export function FrameworkControlDetailSheet({
                         </div>
                         <div className="space-y-2">
                           <Label>Title</Label>
-                          <Input
-                            value={editData.title}
-                            onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                          />
+                          <Input value={editData.title} onChange={(e) => setEditData({ ...editData, title: e.target.value })} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>Domain</Label>
-                            <Input
-                              value={editData.domain}
-                              onChange={(e) => setEditData({ ...editData, domain: e.target.value })}
-                            />
+                            <Input value={editData.domain} onChange={(e) => setEditData({ ...editData, domain: e.target.value })} />
                           </div>
                           <div className="space-y-2">
                             <Label>Subcategory</Label>
-                            <Input
-                              value={editData.subcategory}
-                              onChange={(e) => setEditData({ ...editData, subcategory: e.target.value })}
-                            />
+                            <Input value={editData.subcategory} onChange={(e) => setEditData({ ...editData, subcategory: e.target.value })} />
                           </div>
                         </div>
                         <div className="space-y-2">
                           <Label>Control Type</Label>
-                          <Input
-                            value={editData.control_type}
-                            onChange={(e) => setEditData({ ...editData, control_type: e.target.value })}
-                          />
+                          <Input value={editData.control_type} onChange={(e) => setEditData({ ...editData, control_type: e.target.value })} />
                         </div>
                         <div className="space-y-2">
                           <Label>Description</Label>
-                          <Textarea
-                            value={editData.description}
-                            onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                            rows={4}
-                          />
+                          <Textarea value={editData.description} onChange={(e) => setEditData({ ...editData, description: e.target.value })} rows={4} />
                         </div>
                         <div className="space-y-2">
                           <Label>Reference Links</Label>
-                          <Input
-                            value={editData.reference_links}
-                            onChange={(e) => setEditData({ ...editData, reference_links: e.target.value })}
-                          />
+                          <Input value={editData.reference_links} onChange={(e) => setEditData({ ...editData, reference_links: e.target.value })} />
                         </div>
                       </CardContent>
                     </Card>
                   ) : (
                     <>
-                      {/* Description */}
                       {control?.description && (
                         <Card>
                           <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-medium">Description</CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                              {control.description}
-                            </p>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{control.description}</p>
                           </CardContent>
                         </Card>
                       )}
 
-                      {/* Control Properties */}
                       <Card>
                         <CardHeader className="pb-2">
                           <CardTitle className="text-sm font-medium">Control Properties</CardTitle>
@@ -378,11 +377,7 @@ export function FrameworkControlDetailSheet({
                             </div>
                             <div className="space-y-1">
                               <p className="text-muted-foreground">Security Function</p>
-                              {control?.security_function ? (
-                                <Badge variant="outline">{control.security_function}</Badge>
-                              ) : (
-                                <p className="font-medium">-</p>
-                              )}
+                              {control?.security_function ? <Badge variant="outline">{control.security_function}</Badge> : <p className="font-medium">-</p>}
                             </div>
                             <div className="space-y-1">
                               <p className="text-muted-foreground">Domain</p>
@@ -398,12 +393,7 @@ export function FrameworkControlDetailSheet({
                             </div>
                             <div className="space-y-1">
                               <p className="text-muted-foreground">Last Updated</p>
-                              <p className="font-medium">
-                                {control?.updated_at 
-                                  ? format(new Date(control.updated_at), 'MMM d, yyyy')
-                                  : '-'
-                                }
-                              </p>
+                              <p className="font-medium">{control?.updated_at ? format(new Date(control.updated_at), 'MMM d, yyyy') : '-'}</p>
                             </div>
                           </div>
                           {control?.reference_links && (
@@ -418,7 +408,6 @@ export function FrameworkControlDetailSheet({
                         </CardContent>
                       </Card>
 
-                      {/* Quick Stats */}
                       <div className="grid grid-cols-2 gap-4">
                         <Card>
                           <CardContent className="pt-4 text-center">
@@ -429,16 +418,37 @@ export function FrameworkControlDetailSheet({
                         </Card>
                         <Card>
                           <CardContent className="pt-4 text-center">
-                            <Shield className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                            <p className="text-2xl font-bold">
-                              {(control as any)?.framework?.name ? 1 : 0}
-                            </p>
-                            <p className="text-xs text-muted-foreground">Framework</p>
+                            <FileText className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-2xl font-bold">{evidenceItems.length}</p>
+                            <p className="text-xs text-muted-foreground">Evidence Items</p>
                           </CardContent>
                         </Card>
                       </div>
                     </>
                   )}
+                </TabsContent>
+
+                <TabsContent value="compliance" className="mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium">Compliance</CardTitle>
+                      <CardDescription>Evaluate how usable this framework control is in your program.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Status</p>
+                          <Badge variant={getComplianceVariant((control as any)?.compliance_status)}>
+                            {getComplianceLabel((control as any)?.compliance_status)}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Notes</p>
+                        <p className="text-sm whitespace-pre-wrap">{(control as any)?.compliance_notes || '—'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </TabsContent>
 
                 <TabsContent value="mappings" className="mt-4">
@@ -450,54 +460,33 @@ export function FrameworkControlDetailSheet({
                             <Link2 className="h-4 w-4" />
                             Internal Control Mappings
                           </CardTitle>
-                          <CardDescription>
-                            Map this framework control to internal controls
-                          </CardDescription>
+                          <CardDescription>Map this framework control to your internal controls</CardDescription>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Add mapping */}
-                      <div className="flex gap-2">
+                    <CardContent>
+                      <div className="flex gap-2 mb-4">
                         <Select value={mappingInternalId} onValueChange={setMappingInternalId}>
                           <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Select internal control to map..." />
+                            <SelectValue placeholder="Select internal control..." />
                           </SelectTrigger>
                           <SelectContent className="bg-popover">
-                            <ScrollArea className="max-h-[200px]">
-                              {availableInternalControls.map((ic) => (
-                                <SelectItem key={ic.id} value={ic.id}>
-                                  <span className="font-mono text-xs mr-2">{ic.internal_control_code}</span>
-                                  {ic.title}
-                                </SelectItem>
-                              ))}
-                              {availableInternalControls.length === 0 && (
-                                <div className="text-center py-4 text-sm text-muted-foreground">
-                                  No available internal controls
-                                </div>
-                              )}
-                            </ScrollArea>
+                            {availableInternalControls.map((ic) => (
+                              <SelectItem key={ic.id} value={ic.id}>
+                                {ic.internal_control_code} - {ic.title}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
-                        <Button 
-                          onClick={handleAddMapping}
-                          disabled={!mappingInternalId || createMapping.isPending}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Map
+                        <Button onClick={handleAddMapping} disabled={!mappingInternalId}>
+                          <Plus className="h-4 w-4" />
                         </Button>
                       </div>
 
-                      <Separator />
-
-                      {/* Existing mappings */}
                       {internalMappings.length > 0 ? (
                         <div className="space-y-3">
                           {internalMappings.map((mapping: any) => (
-                            <div 
-                              key={mapping.id}
-                              className="flex items-center justify-between p-3 border rounded-lg group"
-                            >
+                            <div key={mapping.id} className="flex items-center justify-between p-3 border rounded-lg group">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
                                   <Badge variant="outline" className="font-mono text-xs">
@@ -506,20 +495,9 @@ export function FrameworkControlDetailSheet({
                                   <Badge variant="secondary" className="text-xs">
                                     {mapping.mapping_type}
                                   </Badge>
-                                  <Badge variant={
-                                    mapping.internal_control?.status === 'Active' ? 'default' : 'secondary'
-                                  } className="text-xs">
-                                    {mapping.internal_control?.status}
-                                  </Badge>
                                 </div>
-                                <p className="text-sm mt-1">
-                                  {mapping.internal_control?.title}
-                                </p>
-                                {mapping.notes && (
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {mapping.notes}
-                                  </p>
-                                )}
+                                <p className="text-sm mt-1">{mapping.internal_control?.title}</p>
+                                {mapping.notes && <p className="text-xs text-muted-foreground mt-1">{mapping.notes}</p>}
                               </div>
                               <Button
                                 variant="ghost"
@@ -535,8 +513,8 @@ export function FrameworkControlDetailSheet({
                       ) : (
                         <div className="text-center py-8 text-muted-foreground">
                           <Link2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          <p>No internal control mappings yet</p>
-                          <p className="text-sm">Map this control to your internal controls</p>
+                          <p>No internal mappings yet</p>
+                          <p className="text-sm">Map this control to internal controls for implementation tracking</p>
                         </div>
                       )}
                     </CardContent>
@@ -544,139 +522,101 @@ export function FrameworkControlDetailSheet({
                 </TabsContent>
 
                 <TabsContent value="findings" className="mt-4">
-                  <ControlFindingsTab 
-                    controlId={controlId!}
-                    controlType="framework"
-                  />
+                  <ControlFindingsTab findings={findings as any} entityType="framework_control" entityId={controlId || ''} />
                 </TabsContent>
 
-                <TabsContent value="guidance" className="mt-4 space-y-4">
-                  {control?.guidance && (
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Guidance</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                          {control.guidance}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {control?.implementation_guidance && (
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Implementation Guidance</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                          {control.implementation_guidance}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {!control?.guidance && !control?.implementation_guidance && (
-                    <Card>
-                      <CardContent className="py-12 text-center text-muted-foreground">
-                        <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p>No guidance available for this control</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="evidence" className="mt-4 space-y-4">
-                  {/* Upload Section */}
+                <TabsContent value="guidance" className="space-y-4 mt-4">
                   <Card>
-                    <CardHeader className="pb-2">
+                    <CardHeader>
                       <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <Upload className="h-4 w-4" />
-                        Upload Evidence
+                        <Shield className="h-4 w-4" />
+                        Control Guidance
                       </CardTitle>
+                      <CardDescription>Implementation guidance and recommendations</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-2">
-                        <Label>Evidence Name</Label>
-                        <Input
-                          value={evidenceName}
-                          onChange={(e) => setEvidenceName(e.target.value)}
-                          placeholder="Enter evidence name..."
-                        />
-                      </div>
-                      <div>
-                        <Input
-                          ref={fileInputRef}
-                          type="file"
-                          onChange={handleFileUpload}
-                          disabled={uploadEvidence.isPending}
-                        />
-                      </div>
+                    <CardContent className="space-y-4">
+                      {(control as FrameworkControlWithFramework)?.guidance ? (
+                        <div>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{(control as FrameworkControlWithFramework).guidance}</p>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Shield className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p>No guidance provided</p>
+                        </div>
+                      )}
+
+                      {(control as FrameworkControlWithFramework)?.implementation_guidance && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h4 className="font-medium mb-2">Implementation Notes</h4>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{(control as FrameworkControlWithFramework).implementation_guidance}</p>
+                          </div>
+                        </>
+                      )}
+
+                      {(control as FrameworkControlWithFramework)?.reference_links && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h4 className="font-medium mb-2">References</h4>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{(control as FrameworkControlWithFramework).reference_links}</p>
+                          </div>
+                        </>
+                      )}
                     </CardContent>
                   </Card>
+                </TabsContent>
 
-                  {/* Evidence List */}
+                <TabsContent value="evidence" className="mt-4">
                   <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div>
                           <CardTitle className="text-sm font-medium flex items-center gap-2">
                             <FileText className="h-4 w-4" />
-                            Evidence Items ({evidenceItems.length})
+                            Evidence
                           </CardTitle>
-                          <CardDescription>
-                            Documents and artifacts supporting control effectiveness
-                          </CardDescription>
+                          <CardDescription>Upload evidence documents related to this control</CardDescription>
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Evidence name..."
+                            value={evidenceName}
+                            onChange={(e) => setEvidenceName(e.target.value)}
+                            className="w-48"
+                          />
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                          />
+                          <Button size="sm" onClick={() => fileInputRef.current?.click()}>
+                            <Upload className="h-4 w-4 mr-1" />
+                            Upload
+                          </Button>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
                       {evidenceItems.length > 0 ? (
                         <div className="space-y-3">
-                          {evidenceItems.map((item) => (
-                            <div 
-                              key={item.id}
-                              className="flex items-center justify-between p-3 border rounded-lg group"
-                            >
+                          {evidenceItems.map((item: any) => (
+                            <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg group">
                               <div className="flex-1">
-                                <p className="font-medium text-sm">{item.evidence_item?.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {item.evidence_item?.file_name} • {format(new Date(item.created_at), 'MMM d, yyyy')}
-                                </p>
+                                <p className="font-medium">{item.name}</p>
+                                <p className="text-sm text-muted-foreground">Uploaded {format(new Date(item.created_at), 'MMM d, yyyy')}</p>
                               </div>
-                              <div className="flex items-center gap-1">
-                                {item.evidence_item?.storage_key && (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleView(item.evidence_item!.storage_key!)}
-                                      title="View"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleDownload(item.evidence_item!.storage_key!, item.evidence_item!.file_name || 'download')}
-                                      title="Download"
-                                    >
-                                      <Download className="h-4 w-4" />
-                                    </Button>
-                                  </>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="opacity-0 group-hover:opacity-100"
-                                  onClick={() => deleteEvidence.mutate({
-                                    linkId: item.id,
-                                    evidenceId: item.evidence_id,
-                                    storageKey: item.evidence_item?.storage_key || null,
-                                    frameworkControlId: controlId || undefined,
-                                  })}
-                                >
+                              <div className="flex gap-2 opacity-0 group-hover:opacity-100">
+                                <Button variant="ghost" size="icon" onClick={() => handleView(item.storage_key)}>
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleDownload(item.storage_key, item.file_name)}>
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => deleteEvidence.mutate(item.id)}>
                                   <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               </div>
@@ -697,7 +637,7 @@ export function FrameworkControlDetailSheet({
             )}
           </div>
         </ScrollArea>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
