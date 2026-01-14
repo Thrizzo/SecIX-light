@@ -288,7 +288,7 @@ Contact sales for upgrade options.
 
 ## License
 
-Proprietary - All rights reserved.
+Apache 2.0
 
 ## Support
 
